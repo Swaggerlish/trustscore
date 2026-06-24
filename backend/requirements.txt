@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+scikit-learn
+# audit-ai==0.1.1  # Deprecated dependency chain pulls the obsolete `sklearn` package.
+numpy
+pandas
+scipy
+matplotlib
+statsmodels
