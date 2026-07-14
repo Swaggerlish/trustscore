@@ -3,7 +3,9 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import Footer from './Footer';
 
-export default function Layout({ activePage, onNavigate, children }) {
+export default function Layout({ activePage, latestAssessment, onNavigate, children }) {
+  const isAssessmentPage = activePage === 'assessment';
+
   return (
     <div className="flex h-screen overflow-hidden bg-background text-on-surface">
       {/* Fixed Sidebar */}
@@ -12,15 +14,19 @@ export default function Layout({ activePage, onNavigate, children }) {
       {/* Main viewport */}
       <div className="flex-1 flex flex-col min-w-0 bg-surface relative h-screen">
         {/* Header */}
-        <Header activePage={activePage} onNavigate={onNavigate} />
+        <Header
+          activePage={activePage}
+          latestAssessment={latestAssessment}
+          onNavigate={onNavigate}
+        />
 
         {/* Main Canvas Scroll Area */}
-        <main className="flex-1 overflow-y-auto p-lg lg:p-xl pb-24 space-y-lg">
+        <main className={`flex-1 overflow-y-auto p-lg lg:p-xl space-y-lg ${isAssessmentPage ? 'pb-36' : 'pb-24'}`}>
           {children}
         </main>
 
         {/* Footer */}
-        <Footer />
+        {!isAssessmentPage && <Footer />}
       </div>
     </div>
   );

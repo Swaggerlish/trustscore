@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 export default function RiskForm({ data = {}, onChange }) {
   const [activeField, setActiveField] = useState(null);
+  const fileInputRef = useRef(null);
 
   const handleFocus = (field) => setActiveField(field);
   const handleBlur = () => setActiveField(null);
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    onChange('auditName', file ? file.name : '');
+  };
 
   return (
     <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg lg:p-xl shadow-sm transition-all">
@@ -18,6 +23,29 @@ export default function RiskForm({ data = {}, onChange }) {
       </div>
 
       <form className="space-y-xl">
+        <div className="rounded-lg border border-outline-variant bg-surface p-md">
+          <div className="flex items-start gap-md">
+            <span className="material-symbols-outlined text-primary text-[22px] mt-xxs">
+              checklist
+            </span>
+            <div className="space-y-sm">
+              <p className="font-body-md font-bold text-on-surface">
+                Compliance Scoring Inputs
+              </p>
+              <p className="text-label-md text-on-surface-variant">
+                Compliance score uses GDPR/CCPA status, EU AI Act classification, and HIPAA status where applicable.
+              </p>
+              <pre className="overflow-x-auto rounded-lg bg-surface-container p-sm font-mono text-label-sm text-on-surface">
+{`{
+  "gdpr": true,
+  "eu_ai_act": true,
+  "hipaa": false
+}`}
+              </pre>
+            </div>
+          </div>
+        </div>
+
         {/* EU AI Act Risk Tier */}
         <div
           className="space-y-sm transition-transform duration-200"
@@ -107,19 +135,32 @@ export default function RiskForm({ data = {}, onChange }) {
         </div>
 
         {/* Audit Upload */}
-        <div className="p-lg bg-surface border border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-surface-container transition-all">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="min-h-40 w-full overflow-hidden p-lg bg-surface border border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-surface-container transition-all"
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            onChange={handleFileChange}
+          />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">
             verified
           </span>
           <p className="font-body-md font-bold mb-xs text-on-surface">Upload Third-party Compliance Audit</p>
           <p className="text-label-md text-on-surface-variant">SOC 2 Type II, ISO 27001, or legal audits</p>
           {data.auditName && (
-            <div className="mt-md px-md py-xs bg-primary-container/20 text-primary rounded-full text-label-md flex items-center gap-sm">
-              <span className="material-symbols-outlined text-sm">check_circle</span>
-              {data.auditName}
+            <div className="mt-md max-w-full px-md py-xs bg-primary-container/20 text-primary rounded-full text-label-md flex items-center gap-sm">
+              <span className="material-symbols-outlined text-sm shrink-0">check_circle</span>
+              <span className="min-w-0 truncate" title={data.auditName}>
+                {data.auditName}
+              </span>
             </div>
           )}
-        </div>
+        </button>
       </form>
     </div>
   );

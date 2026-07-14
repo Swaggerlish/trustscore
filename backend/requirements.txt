@@ -1,7 +1,9 @@
 fastapi
 uvicorn[standard]
 scikit-learn
-# audit-ai==0.1.1  # Deprecated dependency chain pulls the obsolete `sklearn` package.
+aif360
+evidently
+# audit-ai==0.1.1
 numpy
 pandas
 scipy

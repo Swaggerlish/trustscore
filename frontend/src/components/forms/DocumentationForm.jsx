@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 export default function DocumentationForm({ data = {}, onChange }) {
   const [activeField, setActiveField] = useState(null);
+  const fileInputRef = useRef(null);
 
   const handleFocus = (field) => setActiveField(field);
   const handleBlur = () => setActiveField(null);
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    onChange('whitepaperName', file ? file.name : '');
+  };
 
   return (
     <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg lg:p-xl shadow-sm transition-all">
@@ -92,19 +97,32 @@ export default function DocumentationForm({ data = {}, onChange }) {
         </div>
 
         {/* Technical Whitepaper File Upload */}
-        <div className="p-lg bg-surface border border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-surface-container transition-all">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="min-h-40 w-full overflow-hidden p-lg bg-surface border border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-surface-container transition-all"
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx"
+            onChange={handleFileChange}
+          />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">
             upload_file
           </span>
           <p className="font-body-md font-bold mb-xs text-on-surface">Upload Technical Whitepaper</p>
           <p className="text-label-md text-on-surface-variant">PDF, DOCX up to 10MB</p>
           {data.whitepaperName && (
-            <div className="mt-md px-md py-xs bg-primary-container/20 text-primary rounded-full text-label-md flex items-center gap-sm">
-              <span className="material-symbols-outlined text-sm">check_circle</span>
-              {data.whitepaperName}
+            <div className="mt-md max-w-full px-md py-xs bg-primary-container/20 text-primary rounded-full text-label-md flex items-center gap-sm">
+              <span className="material-symbols-outlined text-sm shrink-0">check_circle</span>
+              <span className="min-w-0 truncate" title={data.whitepaperName}>
+                {data.whitepaperName}
+              </span>
             </div>
           )}
-        </div>
+        </button>
       </form>
     </div>
   );

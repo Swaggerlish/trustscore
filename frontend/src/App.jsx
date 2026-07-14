@@ -1,30 +1,70 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Assessment from './pages/Assessment';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
+  const [assessmentHistory, setAssessmentHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('trustscore_assessments') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const latestAssessment = assessmentHistory[0] || null;
+
+  const saveAssessmentHistory = (nextHistory) => {
+    setAssessmentHistory(nextHistory);
+    localStorage.setItem('trustscore_assessments', JSON.stringify(nextHistory));
+  };
+
+  const handleAssessmentEvaluated = (assessment) => {
+    const existingAssessment = assessmentHistory.find((item) => item.id === assessment.id);
+    const savedAssessment = {
+      ...assessment,
+      id: assessment.id || crypto.randomUUID(),
+      createdAt: existingAssessment?.createdAt || assessment.createdAt || new Date().toISOString()
+    };
+
+    saveAssessmentHistory([
+      savedAssessment,
+      ...assessmentHistory.filter((item) => item.id !== savedAssessment.id)
+    ]);
+  };
+
+  const handleDeleteAssessment = (assessmentId) => {
+    saveAssessmentHistory(assessmentHistory.filter((item) => item.id !== assessmentId));
+  };
+
+  const savedAssessmentCount = useMemo(
+    () => assessmentHistory.length,
+    [assessmentHistory]
+  );
 
   return (
-    <Layout activePage={activePage} onNavigate={setActivePage}>
-      {activePage === 'dashboard' && <Dashboard onNavigate={setActivePage} />}
-      {activePage === 'assessment' && <Assessment />}
+    <Layout activePage={activePage} latestAssessment={latestAssessment} onNavigate={setActivePage}>
+      {activePage === 'dashboard' && (
+        <Dashboard
+          assessmentHistory={assessmentHistory}
+          onDeleteAssessment={handleDeleteAssessment}
+          onNavigate={setActivePage}
+        />
+      )}
+      {activePage === 'assessment' && (
+        <Assessment onAssessmentEvaluated={handleAssessmentEvaluated} />
+      )}
       {activePage === 'reports' && (
-        <div className="p-xl text-center max-w-2xl mx-auto space-y-md">
-          <h2 className="text-headline-md font-bold text-on-surface">Evaluation Reports</h2>
-          <p className="text-on-surface-variant">
-            Historical diagnostic pipeline runs, exported whitepapers, and regulatory compliance reports are cached and presented here.
-          </p>
-        </div>
+        <Reports
+          assessmentHistory={assessmentHistory}
+          onDeleteAssessment={handleDeleteAssessment}
+          onNavigate={setActivePage}
+        />
       )}
       {activePage === 'settings' && (
-        <div className="p-xl text-center max-w-2xl mx-auto space-y-md">
-          <h2 className="text-headline-md font-bold text-on-surface">Settings</h2>
-          <p className="text-on-surface-variant">
-            Adjust active scoring thresholds, toggle EU AI Act rule validation overlays, configure notification destinations, and manage workspace permissions.
-          </p>
-        </div>
+        <Settings savedAssessmentCount={savedAssessmentCount} />
       )}
     </Layout>
   );

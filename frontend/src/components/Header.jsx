@@ -1,6 +1,23 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 
-export default function Header({ activePage, onNavigate }) {
+export default function Header({ activePage, latestAssessment, onNavigate }) {
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState([]);
+  const notifications = useMemo(
+    () => buildNotifications(latestAssessment),
+    [latestAssessment]
+  );
+  const unreadCount = notifications.filter(
+    (notification) => !readNotificationIds.includes(notification.id)
+  ).length;
+
+  const toggleNotifications = () => {
+    setIsNotificationsOpen((isOpen) => !isOpen);
+  };
+
+  const markAllRead = () => {
+    setReadNotificationIds(notifications.map((notification) => notification.id));
+  };
   const getTitle = () => {
     switch (activePage) {
       case 'dashboard':
@@ -38,11 +55,78 @@ export default function Header({ activePage, onNavigate }) {
 
         {/* Action icons & User profile info */}
         <div className="flex items-center gap-md lg:gap-lg ml-xl">
-          <button className="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200 relative">
+          <div className="relative">
+          <button
+            onClick={toggleNotifications}
+            className="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200 relative"
+            aria-expanded={isNotificationsOpen}
+            aria-label="Open notifications"
+          >
             <span className="material-symbols-outlined">notifications</span>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full animate-ping"></span>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+            {unreadCount > 0 && (
+              <>
+                <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full animate-ping"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+              </>
+            )}
           </button>
+          {isNotificationsOpen && (
+            <div className="absolute right-0 top-12 z-50 w-96 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface shadow-xl">
+              <div className="flex items-center justify-between gap-md border-b border-outline-variant px-lg py-md">
+                <div>
+                  <h3 className="font-body-md font-bold text-on-surface">Notifications</h3>
+                  <p className="font-label-md text-label-md text-on-surface-variant">
+                    {unreadCount ? `${unreadCount} unread` : 'All caught up'}
+                  </p>
+                </div>
+                <button
+                  onClick={markAllRead}
+                  className="font-label-md text-label-md font-bold text-primary hover:underline"
+                >
+                  Mark read
+                </button>
+              </div>
+              <div className="divide-y divide-outline-variant">
+                {notifications.map((notification) => {
+                  const isUnread = !readNotificationIds.includes(notification.id);
+                  return (
+                    <button
+                      key={notification.id}
+                      onClick={() => {
+                        setReadNotificationIds((ids) => [...new Set([...ids, notification.id])]);
+                        if (notification.target) {
+                          onNavigate(notification.target);
+                          setIsNotificationsOpen(false);
+                        }
+                      }}
+                      className="w-full p-lg text-left hover:bg-surface-container transition-colors"
+                    >
+                      <div className="flex items-start gap-md">
+                        <span className={`material-symbols-outlined mt-xs ${notification.colorClass}`}>
+                          {notification.icon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-md">
+                            <p className="font-body-md text-body-md font-bold text-on-surface">
+                              {notification.title}
+                            </p>
+                            {isUnread && <span className="h-2 w-2 shrink-0 rounded-full bg-error"></span>}
+                          </div>
+                          <p className="mt-xs font-label-md text-label-md text-on-surface-variant">
+                            {notification.body}
+                          </p>
+                          <p className="mt-sm font-label-md text-label-md text-outline">
+                            {notification.time}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          </div>
           <button className="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200">
             <span className="material-symbols-outlined">help_outline</span>
           </button>
@@ -70,4 +154,32 @@ export default function Header({ activePage, onNavigate }) {
       </div>
     </header>
   );
+}
+
+function buildNotifications(latestAssessment) {
+  const notifications = [
+    {
+      id: 'system-ready',
+      title: 'TrustScore workspace ready',
+      body: 'Run an assessment to generate live dashboard and report updates.',
+      time: 'Now',
+      icon: 'rocket_launch',
+      colorClass: 'text-primary',
+      target: 'assessment'
+    }
+  ];
+
+  if (latestAssessment) {
+    notifications.unshift({
+      id: `assessment-${latestAssessment.name}-${latestAssessment.date}`,
+      title: 'Assessment evaluated',
+      body: `${latestAssessment.name} returned ${latestAssessment.score}% with ${latestAssessment.riskLevel} risk.`,
+      time: latestAssessment.date || 'Just now',
+      icon: latestAssessment.riskLevel === 'High' ? 'warning' : 'verified',
+      colorClass: latestAssessment.riskLevel === 'High' ? 'text-error' : 'text-primary',
+      target: 'reports'
+    });
+  }
+
+  return notifications;
 }

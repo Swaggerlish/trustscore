@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import DocumentationForm from '../components/forms/DocumentationForm';
 import RiskForm from '../components/forms/RiskForm';
 import GenericSectionForm from '../components/forms/GenericSectionForm';
+import BiasFairnessForm from '../components/forms/BiasFairnessForm';
+import DatasetQualityForm from '../components/forms/DatasetQualityForm';
 import { submitAssessment } from '../services/api';
+import { buildReportFromAssessment, downloadReport } from '../utils/reportExport';
 
 const SECTIONS = [
   { id: 'documentation', num: 1, label: 'Documentation & Purpose', icon: 'description', desc: "Provide high-level context about the AI system's intended use and design philosophy." },
@@ -19,7 +22,8 @@ const SECTIONS = [
   { id: 'review', num: 12, label: 'Final Review', icon: 'check_circle', desc: "Consolidate evaluation indicators and publish the AI system's finalized trust certificate." }
 ];
 
-export default function Assessment() {
+export default function Assessment({ onAssessmentEvaluated }) {
+  const assessmentIdRef = useRef(crypto.randomUUID());
   const [activeTab, setActiveTab] = useState('documentation');
   const [formState, setFormState] = useState({
     documentation: {
@@ -35,23 +39,49 @@ export default function Assessment() {
       optOutOptions: false,
       auditName: ''
     },
-    datasets: { details: '', affirmed: false },
-    models: { details: '', affirmed: false },
-    privacy: { details: '', affirmed: false },
-    bias: { details: '', affirmed: false },
-    transparency: { details: '', affirmed: false },
-    environmental: { details: '', affirmed: false },
-    accountability: { details: '', affirmed: false },
-    performance: { details: '', affirmed: false },
-    robustness: { details: '', affirmed: false },
-    review: { details: '', affirmed: false }
+    datasets: {
+      details: '',
+      affirmed: false,
+      evidenceName: '',
+      documentedSources: false,
+      representativeSamples: false,
+      dataLineageAvailable: false,
+      qualityChecksPerformed: false,
+      licensingVerified: false,
+      recordsJson: '',
+      referenceRecordsJson: '',
+      csvContent: ''
+    },
+    models: { details: '', affirmed: false, evidenceName: '' },
+    privacy: { details: '', affirmed: false, evidenceName: '' },
+    bias: {
+      details: '',
+      affirmed: false,
+      evidenceName: '',
+      privilegedGroup: 'reference',
+      unprivilegedGroup: 'comparison',
+      privilegedFavorable: 0,
+      privilegedUnfavorable: 0,
+      unprivilegedFavorable: 0,
+      unprivilegedUnfavorable: 0,
+      decisionRecordsJson: ''
+    },
+    transparency: { details: '', affirmed: false, evidenceName: '' },
+    environmental: { details: '', affirmed: false, evidenceName: '' },
+    accountability: { details: '', affirmed: false, evidenceName: '' },
+    performance: { details: '', affirmed: false, evidenceName: '' },
+    robustness: { details: '', affirmed: false, evidenceName: '' },
+    review: { details: '', affirmed: false, evidenceName: '' }
   });
 
   const [trustScore, setTrustScore] = useState(72);
   const [riskLevel, setRiskLevel] = useState('Medium');
+  const [assessmentResult, setAssessmentResult] = useState(null);
+  const [apiError, setApiError] = useState(null);
   const [progress, setProgress] = useState(15);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(null);
+  const [downloadFormat, setDownloadFormat] = useState('pdf');
 
   // Handle form field changes dynamically
   const handleFieldChange = (sectionId, fieldId, value) => {
@@ -93,51 +123,25 @@ export default function Assessment() {
     const completionRate = Math.min(100, Math.round((filledFields / totalFields) * 100));
     setProgress(Math.max(15, completionRate)); // starts at 15% like mockup
 
-    // 2. Calculate Trust Score
-    // Let's call the FastAPI backend to score it!
+    // 2. Calculate Trust Score from the FastAPI backend.
     const queryBackendScore = async () => {
       try {
-        // Send a risk indicator value if risk details are present
-        const payload = {
-          risk: formState.risk.liabilityCoverage || formState.risk.gdprCompliant ? 'low' : ''
-        };
-        const res = await submitAssessment(payload);
-        if (res && typeof res.score === 'number') {
-          // Adjust backend score based on extra section details
-          let extraPoints = 0;
-          if (formState.risk.gdprCompliant) extraPoints += 8;
-          if (formState.risk.optOutOptions) extraPoints += 4;
-          if (formState.documentation.whitepaperName) extraPoints += 12; // Optimization suggestion
-          const finalScore = Math.max(10, Math.min(100, res.score - 20 + extraPoints));
-          setTrustScore(finalScore);
+        const res = await submitAssessment(formState);
+        if (res && typeof res.overall_score === 'number') {
+          setAssessmentResult(res);
+          setTrustScore(Math.round(res.overall_score));
+          setRiskLevel(res.risk_level);
+          setApiError(null);
+          onAssessmentEvaluated?.(buildDashboardAssessment(formState, res, assessmentIdRef.current));
         }
       } catch (err) {
-        // Local client-side scoring logic fallback if backend not running
-        let score = 55;
-        if (formState.documentation.systemName) score += 5;
-        if (formState.documentation.intendedUse) score += 5;
-        if (formState.risk.gdprCompliant) score += 10;
-        if (formState.risk.optOutOptions) score += 5;
-        if (formState.risk.liabilityCoverage) score += 5;
-        if (formState.risk.auditName || formState.documentation.whitepaperName) score += 12;
-
-        setTrustScore(Math.min(100, score));
+        setApiError(err.message || 'Backend unavailable');
       }
     };
 
-    queryBackendScore();
+    const timer = window.setTimeout(queryBackendScore, 350);
+    return () => window.clearTimeout(timer);
   }, [formState]);
-
-  // Derive Risk Level based on trust score
-  useEffect(() => {
-    if (trustScore >= 80) {
-      setRiskLevel('Low');
-    } else if (trustScore >= 50) {
-      setRiskLevel('Medium');
-    } else {
-      setRiskLevel('High');
-    }
-  }, [trustScore]);
 
   // Handle Assessment submission
   const handleSubmit = async (e) => {
@@ -146,30 +150,50 @@ export default function Assessment() {
     setSubmitMessage(null);
 
     try {
-      const res = await submitAssessment({
-        risk: formState.risk.liabilityCoverage || formState.risk.gdprCompliant ? 'low' : ''
-      });
+      const res = await submitAssessment(formState);
+      setAssessmentResult(res);
+      setTrustScore(Math.round(res.overall_score));
+      setRiskLevel(res.risk_level);
+      setApiError(null);
+      onAssessmentEvaluated?.(buildDashboardAssessment(formState, res, assessmentIdRef.current));
       setSubmitMessage({
         type: 'success',
-        text: `Assessment successfully submitted! Final evaluation complete with a trust score of ${trustScore}%.`
+        text: `Assessment successfully submitted. Final backend trust score: ${Math.round(res.overall_score)}%.`
       });
     } catch (err) {
       setSubmitMessage({
-        type: 'success', // Show success locally anyway since user is testing
-        text: `Assessment draft saved locally. Trust score computed: ${trustScore}%.`
+        type: 'info',
+        text: `Assessment could not reach the backend: ${err.message || 'Unknown error'}.`
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleDownloadReport = () => {
+    if (!assessmentResult) {
+      setSubmitMessage({
+        type: 'info',
+        text: 'Run the assessment first so the report includes backend scores and recommendations.'
+      });
+      return;
+    }
+
+    downloadReport(
+      buildReportFromAssessment(formState, assessmentResult, { id: assessmentIdRef.current }),
+      downloadFormat
+    );
+  };
+
   const getActiveSection = () => SECTIONS.find((s) => s.id === activeTab) || SECTIONS[0];
   const activeSection = getActiveSection();
+  const scoreLabel = (value) => (typeof value === 'number' ? `${Math.round(value)}%` : 'Pending');
+  const metricLabel = (value) => (typeof value === 'number' ? value.toFixed(3) : 'Pending');
 
   return (
-    <div className="space-y-xl max-w-max_width mx-auto">
+    <div className="space-y-xl max-w-max_width mx-auto pb-24">
       {/* Progress and Action Bar */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-lg border-b border-outline-variant pb-lg">
+      <div className="sticky top-0 z-20 -mx-md px-md py-md bg-surface/95 backdrop-blur flex flex-col md:flex-row md:items-end justify-between gap-lg border-b border-outline-variant">
         <div className="flex-1 max-w-2xl">
           <div className="flex justify-between items-center mb-sm">
             <span className="font-label-md text-label-md text-on-surface-variant font-semibold">
@@ -193,10 +217,24 @@ export default function Assessment() {
           >
             Save Draft
           </button>
-          <button className="px-lg py-md rounded-lg border border-outline-variant font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-sm">
-            <span className="material-symbols-outlined text-[20px]">download</span>
-            Download Report
-          </button>
+          <div className="flex overflow-hidden rounded-lg border border-outline-variant">
+            <select
+              value={downloadFormat}
+              onChange={(event) => setDownloadFormat(event.target.value)}
+              className="bg-surface px-md py-md font-body-md font-bold text-on-surface-variant outline-none"
+              aria-label="Report download format"
+            >
+              <option value="pdf">PDF</option>
+              <option value="json">JSON</option>
+            </select>
+            <button
+              onClick={handleDownloadReport}
+              className="px-lg py-md bg-surface font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-sm"
+            >
+              <span className="material-symbols-outlined text-[20px]">download</span>
+              Download
+            </button>
+          </div>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
@@ -225,15 +263,14 @@ export default function Assessment() {
       {/* Grid Layout */}
       <div className="grid grid-cols-12 gap-lg">
         {/* Stepper Column */}
-        <div className="col-span-12 lg:col-span-3 space-y-xs">
+        <div className="col-span-12 lg:col-span-3 space-y-xs lg:sticky lg:top-32 lg:self-start">
           <h2 className="font-label-md text-label-md text-outline uppercase tracking-wider px-md mb-md">
             Assessment Sections
           </h2>
-          <div className="space-y-1 max-h-[70vh] overflow-y-auto pr-xs">
+          <div className="space-y-1 max-h-[calc(100vh-12rem)] overflow-y-auto pr-xs">
             {SECTIONS.map((section) => {
               const isActive = activeTab === section.id;
-              // Enabled sections in static mockup: Documentation (1), Datasets (2), Models (3), Privacy (4), Risk (9)
-              const isDefaultAllowed = [1, 2, 3, 4, 9].includes(section.num);
+              const isDefaultAllowed = true;
 
               return (
                 <button
@@ -273,7 +310,25 @@ export default function Assessment() {
             />
           )}
 
-          {activeTab !== 'documentation' && activeTab !== 'risk' && (
+          {activeTab === 'bias' && (
+            <BiasFairnessForm
+              sectionTitle={activeSection.label}
+              sectionDesc={activeSection.desc}
+              data={formState.bias}
+              onChange={(field, val) => handleFieldChange('bias', field, val)}
+            />
+          )}
+
+          {activeTab === 'datasets' && (
+            <DatasetQualityForm
+              sectionTitle={activeSection.label}
+              sectionDesc={activeSection.desc}
+              data={formState.datasets}
+              onChange={(field, val) => handleFieldChange('datasets', field, val)}
+            />
+          )}
+
+          {activeTab !== 'documentation' && activeTab !== 'risk' && activeTab !== 'bias' && activeTab !== 'datasets' && (
             <GenericSectionForm
               sectionId={activeSection.id}
               sectionTitle={activeSection.label}
@@ -291,6 +346,11 @@ export default function Assessment() {
             <h3 className="font-label-md text-label-md text-on-surface-variant uppercase mb-lg tracking-wider">
               Real-time Analysis
             </h3>
+            {apiError && (
+              <div className="mb-md rounded-lg border border-yellow-200 bg-yellow-50 px-md py-sm text-label-md font-semibold text-yellow-800">
+                Backend connection pending
+              </div>
+            )}
             <div className="flex flex-col items-center mb-xl">
               <div className="relative w-32 h-32 flex items-center justify-center mb-md">
                 <svg className="w-full h-full -rotate-90">
@@ -343,27 +403,93 @@ export default function Assessment() {
             {/* Diagnostic Categories Checklist */}
             <div className="space-y-md border-t border-outline-variant pt-lg">
               <div className="flex justify-between items-center text-body-md">
-                <span className="text-on-surface-variant">Data Integrity</span>
-                <span className="font-bold text-green-600">High</span>
-              </div>
-              <div className="flex justify-between items-center text-body-md">
-                <span className="text-on-surface-variant">Model Bias</span>
-                <span
-                  className={`font-bold transition-all ${
-                    formState.bias.details ? 'text-green-600' : 'text-yellow-600'
-                  }`}
-                >
-                  {formState.bias.details ? 'Verified' : 'Pending'}
+                <span className="text-on-surface-variant">Bias &amp; Fairness</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.bias_score)}
                 </span>
               </div>
               <div className="flex justify-between items-center text-body-md">
-                <span className="text-on-surface-variant">Certifications</span>
-                <span
-                  className={`font-bold transition-all ${
-                    formState.risk.auditName ? 'text-green-600' : 'text-error'
-                  }`}
-                >
-                  {formState.risk.auditName ? 'Uploaded' : 'Missing'}
+                <span className="text-on-surface-variant">Bias Method</span>
+                <span className="font-bold text-on-surface">
+                  {assessmentResult?.bias_evaluation_method === 'aif360' ? 'AIF360' : 'Rule-based'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Privacy &amp; Security</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.privacy_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Dataset Quality</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.dataset_quality_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Dataset Method</span>
+                <span className="font-bold text-on-surface">
+                  {formatDatasetMethod(assessmentResult?.dataset_quality_evaluation_method)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Dataset Rows</span>
+                <span className="font-bold text-on-surface">
+                  {assessmentResult?.data_quality_metrics?.rows ?? 'Pending'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Model Architecture</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.model_architecture_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Compliance</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.compliance_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Transparency</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.transparency_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Environmental</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.environmental_impact_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Accountability</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.accountability_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Performance</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.performance_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Robustness</span>
+                <span className="font-bold text-on-surface">
+                  {scoreLabel(assessmentResult?.robustness_score)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Demographic Parity</span>
+                <span className="font-bold text-on-surface">
+                  {metricLabel(assessmentResult?.demographic_parity_difference)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-body-md">
+                <span className="text-on-surface-variant">Disparate Impact</span>
+                <span className="font-bold text-on-surface">
+                  {metricLabel(assessmentResult?.disparate_impact_ratio)}
                 </span>
               </div>
             </div>
@@ -375,18 +501,17 @@ export default function Assessment() {
               <span className="material-symbols-outlined text-primary">lightbulb</span>
               <h3 className="font-body-md font-bold text-primary">Optimization Tip</h3>
             </div>
-            <p className="text-body-md text-on-surface-variant leading-relaxed">
-              {formState.risk.auditName ? (
-                <span className="text-green-700 font-semibold">
-                  Excellent! Your audit report has been registered. This maximizes audit credibility indices.
-                </span>
-              ) : (
-                <>
-                  Uploading a third-party compliance audit report could increase your trust score by up to{' '}
-                  <span className="font-bold text-primary">12%</span>.
-                </>
-              )}
-            </p>
+            {assessmentResult?.recommendations?.length ? (
+              <ul className="space-y-sm text-body-md text-on-surface-variant leading-relaxed">
+                {assessmentResult.recommendations.slice(0, 3).map((recommendation) => (
+                  <li key={recommendation}>{recommendation}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-body-md text-on-surface-variant leading-relaxed">
+                Backend recommendations will appear after the assessment is evaluated.
+              </p>
+            )}
           </div>
 
           {/* Contextual Visual Image (Geometric Abstract art) */}
@@ -399,6 +524,74 @@ export default function Assessment() {
           </div>
         </div>
       </div>
+
+      <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-50 border-t border-outline-variant bg-surface/95 px-lg py-md backdrop-blur shadow-lg">
+        <div className="max-w-max_width mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-md">
+          <div>
+            <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
+              Current Trust Score
+            </p>
+            <p className="font-body-md text-body-md font-bold text-on-surface">
+              {trustScore}% · {riskLevel} Risk
+            </p>
+          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="px-lg py-md rounded-lg bg-primary text-on-primary font-body-md font-bold hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50"
+          >
+            {isSubmitting ? 'Evaluating...' : 'Submit Assessment'}
+          </button>
+        </div>
+      </div>
     </div>
   );
+}
+
+function formatDatasetMethod(method) {
+  if (method === 'hybrid_evidently_rule_based') {
+    return 'Evidently';
+  }
+  if (method === 'hybrid_profile_rule_based') {
+    return 'Profile';
+  }
+  return 'Rule-based';
+}
+
+function buildDashboardAssessment(formState, result, id) {
+  const score = Math.round(result.overall_score || 0);
+  return {
+    id,
+    name: formState.documentation?.systemName || 'Unnamed AI Vendor',
+    category: formState.risk?.aiActTier || 'AI Procurement Assessment',
+    status: 'Completed',
+    riskLevel: result.risk_level,
+    score,
+    scoreText: `${result.risk_level} Risk`,
+    date: new Date().toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }),
+    scores: {
+      bias: result.bias_score,
+      datasetQuality: result.dataset_quality_score,
+      modelArchitecture: result.model_architecture_score,
+      privacy: result.privacy_score,
+      compliance: result.compliance_score,
+      transparency: result.transparency_score,
+      environmentalImpact: result.environmental_impact_score,
+      accountability: result.accountability_score,
+      performance: result.performance_score,
+      robustness: result.robustness_score
+    },
+    metrics: {
+      demographicParityDifference: result.demographic_parity_difference,
+      disparateImpactRatio: result.disparate_impact_ratio,
+      biasEvaluationMethod: result.bias_evaluation_method,
+      datasetQualityEvaluationMethod: result.dataset_quality_evaluation_method,
+      dataQualityMetrics: result.data_quality_metrics
+    },
+    recommendations: result.recommendations || []
+  };
 }

@@ -1,10 +1,136 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+
+const SECTION_REQUIREMENTS = {
+  models: {
+    title: 'Model Architecture Scoring Inputs',
+    items: [
+      'Architecture documentation',
+      'Training methodology documentation',
+      'Version control evidence',
+      'Deployment architecture',
+      'Explainability mechanism'
+    ],
+    json: `{
+  "architecture_documented": true,
+  "training_methodology_documented": true,
+  "version_control": true,
+  "deployment_architecture_provided": true,
+  "explainability_mechanism": true
+}`
+  },
+  privacy: {
+    title: 'Privacy & Security Scoring Inputs',
+    items: [
+      'Encryption controls',
+      'Anonymization or de-identification',
+      'Access controls',
+      'Data minimization'
+    ],
+    json: `{
+  "encryption": true,
+  "anonymization": true,
+  "access_controls": true,
+  "data_minimization": true
+}`
+  },
+  transparency: {
+    title: 'Transparency Scoring Inputs',
+    items: [
+      'Model card or factsheet',
+      'Explainability documentation',
+      'Decision logging',
+      'User disclosures',
+      'Limitations disclosed'
+    ],
+    json: `{
+  "model_card_available": true,
+  "explainability_documented": true,
+  "decision_logging_enabled": true,
+  "user_disclosures_provided": true,
+  "limitations_disclosed": true
+}`
+  },
+  environmental: {
+    title: 'Environmental Impact Scoring Inputs',
+    items: [
+      'Energy usage tracking',
+      'Carbon impact estimate',
+      'Efficient training practices',
+      'Compute resource reporting',
+      'Lifecycle optimization plan'
+    ],
+    json: `{
+  "energy_usage_tracked": true,
+  "carbon_impact_estimated": true,
+  "efficient_training_practices": true,
+  "resource_reporting_available": true,
+  "lifecycle_optimization_plan": true
+}`
+  },
+  accountability: {
+    title: 'Accountability Scoring Inputs',
+    items: [
+      'Responsible owner',
+      'Audit logs',
+      'Human oversight',
+      'Incident response plan',
+      'Governance board'
+    ],
+    json: `{
+  "responsible_owner": true,
+  "audit_logs": true,
+  "human_oversight": true,
+  "incident_response_plan": true,
+  "governance_board": true
+}`
+  },
+  performance: {
+    title: 'Performance Scoring Inputs',
+    items: [
+      'Latency SLA',
+      'Throughput testing',
+      'Accuracy validation',
+      'Monitoring',
+      'Benchmark documentation'
+    ],
+    json: `{
+  "latency_sla_defined": true,
+  "throughput_tested": true,
+  "accuracy_validated": true,
+  "monitoring_enabled": true,
+  "benchmark_documented": true
+}`
+  },
+  robustness: {
+    title: 'Robustness Scoring Inputs',
+    items: [
+      'Adversarial or misuse testing',
+      'Drift monitoring',
+      'Fallback controls',
+      'Stress testing',
+      'Incident playbooks'
+    ],
+    json: `{
+  "adversarial_testing": true,
+  "drift_monitoring": true,
+  "fallback_controls": true,
+  "stress_testing": true,
+  "incident_playbooks": true
+}`
+  }
+};
 
 export default function GenericSectionForm({ sectionId, sectionTitle, sectionDesc, data = {}, onChange }) {
   const [activeField, setActiveField] = useState(null);
+  const fileInputRef = useRef(null);
+  const requirements = SECTION_REQUIREMENTS[sectionId];
 
   const handleFocus = (field) => setActiveField(field);
   const handleBlur = () => setActiveField(null);
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    onChange('evidenceName', file ? file.name : '');
+  };
 
   // Derive dynamic labels based on the section
   const getTextLabel = () => {
@@ -48,6 +174,41 @@ export default function GenericSectionForm({ sectionId, sectionTitle, sectionDes
       </div>
 
       <form className="space-y-xl">
+        {requirements && (
+          <div className="rounded-lg border border-outline-variant bg-surface p-md">
+            <div className="flex items-start gap-md">
+              <span className="material-symbols-outlined text-primary text-[22px] mt-xxs">
+                checklist
+              </span>
+              <div className="min-w-0 flex-1 space-y-sm">
+                <div>
+                  <p className="font-body-md font-bold text-on-surface">
+                    {requirements.title}
+                  </p>
+                  <p className="text-label-md text-on-surface-variant">
+                    Score is based on these controls. Paste JSON when vendor answers are structured.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-md">
+                  <ul className="space-y-xs text-label-md text-on-surface-variant">
+                    {requirements.items.map((item) => (
+                      <li key={item} className="flex items-start gap-sm">
+                        <span className="material-symbols-outlined text-primary text-[16px] mt-xxs">
+                          check
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <pre className="min-w-0 overflow-x-auto rounded-lg bg-surface-container p-sm font-mono text-label-sm text-on-surface">
+                    {requirements.json}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Core details textarea */}
         <div
           className="space-y-sm transition-transform duration-200"
@@ -89,13 +250,32 @@ export default function GenericSectionForm({ sectionId, sectionTitle, sectionDes
         </div>
 
         {/* Supporting Docs */}
-        <div className="p-lg bg-surface border border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-surface-container transition-all">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="min-h-40 w-full overflow-hidden p-lg bg-surface border border-dashed border-outline-variant rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-surface-container transition-all"
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.csv,.xlsx,.png,.jpg,.jpeg"
+            onChange={handleFileChange}
+          />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">
             cloud_upload
           </span>
           <p className="font-body-md font-bold mb-xs text-on-surface">Upload Supporting Proof / Evidence</p>
           <p className="text-label-md text-on-surface-variant">Upload any diagnostics or test reports up to 15MB</p>
-        </div>
+          {data.evidenceName && (
+            <div className="mt-md max-w-full px-md py-xs bg-primary-container/20 text-primary rounded-full text-label-md flex items-center gap-sm">
+              <span className="material-symbols-outlined text-sm shrink-0">check_circle</span>
+              <span className="min-w-0 truncate" title={data.evidenceName}>
+                {data.evidenceName}
+              </span>
+            </div>
+          )}
+        </button>
       </form>
     </div>
   );
