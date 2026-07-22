@@ -490,6 +490,23 @@ export async function submitAssessment(formState) {
   return normalizeAssessmentResponse(result, payload);
 }
 
+export async function verifyUploadedDocument(file, section, vendorClaims) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('section', section);
+  formData.append('vendor_claims', JSON.stringify(vendorClaims));
+
+  const response = await fetch(`${API_BASE_URL}/assessment/verify-document`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    throw new Error(errorBody.detail || 'Document verification failed.');
+  }
+  return response.json();
+}
+
 function normalizeAssessmentResponse(result, payload) {
   const normalized = { ...result };
 

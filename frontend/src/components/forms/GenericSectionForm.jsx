@@ -130,6 +130,7 @@ export default function GenericSectionForm({ sectionId, sectionTitle, sectionDes
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     onChange('evidenceName', file ? file.name : '');
+    onChange('evidenceFile', file || null);
   };
 
   // Derive dynamic labels based on the section
@@ -259,7 +260,7 @@ export default function GenericSectionForm({ sectionId, sectionTitle, sectionDes
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx,.csv,.xlsx,.png,.jpg,.jpeg"
+            accept=".pdf,.docx,.txt,.md,.csv,.json,.xlsx"
             onChange={handleFileChange}
           />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">

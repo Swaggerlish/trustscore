@@ -9,6 +9,7 @@ export default function RiskForm({ data = {}, onChange }) {
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     onChange('auditName', file ? file.name : '');
+    onChange('auditFile', file || null);
   };
 
   return (
@@ -144,7 +145,7 @@ export default function RiskForm({ data = {}, onChange }) {
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            accept=".pdf,.docx,.txt,.md,.csv,.json,.xlsx"
             onChange={handleFileChange}
           />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">

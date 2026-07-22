@@ -9,3 +9,9 @@ pandas
 scipy
 matplotlib
 statsmodels
+huggingface_hub
+python-dotenv
+python-multipart
+pypdf
+python-docx
+openpyxl

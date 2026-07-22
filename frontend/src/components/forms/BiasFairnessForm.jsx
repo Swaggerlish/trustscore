@@ -40,6 +40,7 @@ export default function BiasFairnessForm({ sectionTitle, sectionDesc, data = {},
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     onChange('evidenceName', file ? file.name : '');
+    onChange('evidenceFile', file || null);
   };
 
   return (
@@ -180,7 +181,7 @@ export default function BiasFairnessForm({ sectionTitle, sectionDesc, data = {},
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx,.csv,.xlsx,.png,.jpg,.jpeg"
+            accept=".pdf,.docx,.txt,.md,.csv,.json,.xlsx"
             onChange={handleFileChange}
           />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">

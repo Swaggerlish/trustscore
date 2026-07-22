@@ -42,6 +42,7 @@ export default function DatasetQualityForm({ sectionTitle, sectionDesc, data = {
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     onChange('evidenceName', file ? file.name : '');
+    onChange('evidenceFile', file || null);
     onChange('csvContent', '');
 
     if (!file || !isCsvFile(file)) {
@@ -194,7 +195,7 @@ export default function DatasetQualityForm({ sectionTitle, sectionDesc, data = {
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx,.csv,.xlsx,.json,.png,.jpg,.jpeg"
+            accept=".pdf,.docx,.txt,.md,.csv,.xlsx,.json"
             onChange={handleFileChange}
           />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">

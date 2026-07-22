@@ -9,6 +9,7 @@ from app.routers import (
     bias,
     compliance,
     dataset_quality,
+    document_verification,
     environmental_impact,
     model_architecture,
     performance,
@@ -42,6 +43,7 @@ app.include_router(robustness.router)
 app.include_router(environmental_impact.router)
 app.include_router(performance.router)
 app.include_router(assessment.router)
+app.include_router(document_verification.router)
 
 
 @app.get("/health", tags=["System"])

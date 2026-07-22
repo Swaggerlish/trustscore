@@ -4,7 +4,7 @@ import RiskForm from '../components/forms/RiskForm';
 import GenericSectionForm from '../components/forms/GenericSectionForm';
 import BiasFairnessForm from '../components/forms/BiasFairnessForm';
 import DatasetQualityForm from '../components/forms/DatasetQualityForm';
-import { submitAssessment } from '../services/api';
+import { submitAssessment, verifyUploadedDocument } from '../services/api';
 import { buildReportFromAssessment, downloadReport } from '../utils/reportExport';
 
 const SECTIONS = [
@@ -82,16 +82,53 @@ export default function Assessment({ onAssessmentEvaluated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState(null);
   const [downloadFormat, setDownloadFormat] = useState('pdf');
+  const [documentVerifications, setDocumentVerifications] = useState({});
 
   // Handle form field changes dynamically
   const handleFieldChange = (sectionId, fieldId, value) => {
-    setFormState((prev) => ({
-      ...prev,
+    const nextFormState = {
+      ...formState,
       [sectionId]: {
-        ...prev[sectionId],
+        ...formState[sectionId],
+        [fieldId]: value
+      }
+    };
+    setFormState((previous) => ({
+      ...previous,
+      [sectionId]: {
+        ...previous[sectionId],
         [fieldId]: value
       }
     }));
+
+    if (fieldId.endsWith('File') && value) {
+      runDocumentVerification(sectionId, value, nextFormState);
+    } else if (fieldId !== 'evidenceName' && fieldId !== 'whitepaperName') {
+      setDocumentVerifications((current) => current[sectionId]
+        ? { ...current, [sectionId]: { ...current[sectionId], status: 'stale' } }
+        : current);
+    }
+  };
+
+  const runDocumentVerification = async (sectionId, file, state = formState) => {
+    setDocumentVerifications((current) => ({
+      ...current,
+      [sectionId]: { status: 'verifying', filename: file.name }
+    }));
+    try {
+      const result = await verifyUploadedDocument(file, sectionId, buildVendorClaims(sectionId, state));
+      setDocumentVerifications((current) => ({
+        ...current,
+        [sectionId]: { status: 'complete', filename: file.name, result }
+      }));
+      return result;
+    } catch (error) {
+      setDocumentVerifications((current) => ({
+        ...current,
+        [sectionId]: { status: 'error', filename: file.name, error: error.message }
+      }));
+      return null;
+    }
   };
 
   // Calculate local client-side trust score and completeness progress
@@ -150,6 +187,14 @@ export default function Assessment({ onAssessmentEvaluated }) {
     setSubmitMessage(null);
 
     try {
+      const documents = Object.entries(formState)
+        .map(([sectionId, section]) => [sectionId, section.whitepaperFile || section.evidenceFile || section.auditFile])
+        .filter(([, file]) => file);
+      await Promise.all(documents.map(([sectionId, file]) =>
+        documentVerifications[sectionId]?.status === 'complete'
+          ? Promise.resolve()
+          : runDocumentVerification(sectionId, file, formState)
+      ));
       const res = await submitAssessment(formState);
       setAssessmentResult(res);
       setTrustScore(Math.round(res.overall_score));
@@ -191,9 +236,9 @@ export default function Assessment({ onAssessmentEvaluated }) {
   const metricLabel = (value) => (typeof value === 'number' ? value.toFixed(3) : 'Pending');
 
   return (
-    <div className="space-y-xl max-w-max_width mx-auto pb-24">
+    <div className="space-y-xl max-w-max_width mx-auto">
       {/* Progress and Action Bar */}
-      <div className="sticky top-0 z-20 -mx-md px-md py-md bg-surface/95 backdrop-blur flex flex-col md:flex-row md:items-end justify-between gap-lg border-b border-outline-variant">
+      <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-sm flex flex-col lg:flex-row lg:items-end justify-between gap-lg">
         <div className="flex-1 max-w-2xl">
           <div className="flex justify-between items-center mb-sm">
             <span className="font-label-md text-label-md text-on-surface-variant font-semibold">
@@ -257,6 +302,20 @@ export default function Assessment({ onAssessmentEvaluated }) {
             {submitMessage.type === 'success' ? 'check_circle' : 'info'}
           </span>
           <p className="font-body-md font-medium">{submitMessage.text}</p>
+        </div>
+      )}
+
+      {Object.keys(documentVerifications).length > 0 && (
+        <div className="space-y-md">
+          <div>
+            <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">AI Document Verification</h2>
+            <p className="text-body-md text-on-surface-variant">
+              Llama compares uploaded evidence with the vendor's narrative and selected claims. It does not replace human review.
+            </p>
+          </div>
+          {Object.entries(documentVerifications).map(([sectionId, verification]) => (
+            <DocumentVerificationCard key={sectionId} sectionId={sectionId} verification={verification} />
+          ))}
         </div>
       )}
 
@@ -525,25 +584,6 @@ export default function Assessment({ onAssessmentEvaluated }) {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-50 border-t border-outline-variant bg-surface/95 px-lg py-md backdrop-blur shadow-lg">
-        <div className="max-w-max_width mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-md">
-          <div>
-            <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-              Current Trust Score
-            </p>
-            <p className="font-body-md text-body-md font-bold text-on-surface">
-              {trustScore}% · {riskLevel} Risk
-            </p>
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-lg py-md rounded-lg bg-primary text-on-primary font-body-md font-bold hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50"
-          >
-            {isSubmitting ? 'Evaluating...' : 'Submit Assessment'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -556,6 +596,69 @@ function formatDatasetMethod(method) {
     return 'Profile';
   }
   return 'Rule-based';
+}
+
+function buildVendorClaims(sectionId, formState) {
+  const section = formState[sectionId] || {};
+  const claims = {};
+  Object.entries(section).forEach(([key, value]) => {
+    if (key.endsWith('File') || key === 'csvContent' || value === '' || value === null || value === false) return;
+    claims[key] = typeof value === 'string' ? value.slice(0, 4000) : value;
+  });
+  return {
+    vendorName: formState.documentation?.systemName || 'Unnamed vendor',
+    section: sectionId,
+    claims
+  };
+}
+
+function DocumentVerificationCard({ sectionId, verification }) {
+  const sectionLabel = SECTIONS.find((section) => section.id === sectionId)?.label || sectionId;
+  if (verification.status === 'verifying') {
+    return <div className="rounded-lg border border-blue-200 bg-blue-50 p-md text-blue-800">Verifying {verification.filename} for {sectionLabel}…</div>;
+  }
+  if (verification.status === 'error') {
+    return <div className="rounded-lg border border-red-200 bg-red-50 p-md text-red-800"><strong>{sectionLabel}:</strong> {verification.error}</div>;
+  }
+  if (verification.status === 'stale') {
+    return <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-md text-yellow-800"><strong>{sectionLabel}:</strong> Vendor answers changed. Submit the assessment to verify this document again.</div>;
+  }
+
+  const result = verification.result;
+  const supported = result.claims.filter((claim) => claim.verdict === 'supported').length;
+  const contradicted = result.claims.filter((claim) => claim.verdict === 'contradicted').length;
+  const needsEvidence = result.claims.filter((claim) =>
+    claim.verdict === 'not_found' || claim.verdict === 'partially_supported'
+  );
+  return (
+    <details className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md" open={contradicted > 0 || needsEvidence.length > 0}>
+      <summary className="cursor-pointer font-body-md font-bold text-on-surface">
+        {sectionLabel}: {result.overall_verdict.replaceAll('_', ' ')} · {supported} supported · {needsEvidence.length} need evidence · {contradicted} contradicted
+      </summary>
+      <p className="mt-sm text-body-md text-on-surface-variant">{result.summary}</p>
+      {needsEvidence.length > 0 && (
+        <div className="mt-md rounded-lg border border-yellow-200 bg-yellow-50 p-md text-yellow-900">
+          <p className="font-body-md font-bold">Items missing or not fully validated</p>
+          <ul className="mt-sm space-y-sm list-disc pl-lg">
+            {needsEvidence.map((claim, index) => (
+              <li key={`${claim.claim}-missing-${index}`}>
+                <span className="font-semibold">{claim.claim}</span>
+                {claim.explanation && <span> — {claim.explanation}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="mt-md space-y-sm">
+        {result.claims.map((claim, index) => (
+          <div key={`${claim.claim}-${index}`} className="rounded-lg bg-surface p-sm text-body-md">
+            <span className="font-bold capitalize">{claim.verdict.replaceAll('_', ' ')}:</span> {claim.claim}
+            {claim.explanation && <p className="mt-xs text-on-surface-variant">{claim.explanation}</p>}
+          </div>
+        ))}
+      </div>
+    </details>
+  );
 }
 
 function buildDashboardAssessment(formState, result, id) {

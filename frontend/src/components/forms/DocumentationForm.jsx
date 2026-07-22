@@ -9,6 +9,7 @@ export default function DocumentationForm({ data = {}, onChange }) {
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     onChange('whitepaperName', file ? file.name : '');
+    onChange('whitepaperFile', file || null);
   };
 
   return (
@@ -106,7 +107,7 @@ export default function DocumentationForm({ data = {}, onChange }) {
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.docx,.txt,.md"
             onChange={handleFileChange}
           />
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">
