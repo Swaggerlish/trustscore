@@ -160,7 +160,7 @@ function buildNotifications(latestAssessment) {
   const notifications = [
     {
       id: 'system-ready',
-      title: 'TrustScore workspace ready',
+      title: 'ProcureScore workspace ready',
       body: 'Run an assessment to generate live dashboard and report updates.',
       time: 'Now',
       icon: 'rocket_launch',

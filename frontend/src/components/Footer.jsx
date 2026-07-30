@@ -5,9 +5,9 @@ export default function Footer() {
     <footer className="fixed bottom-0 right-0 w-[calc(100%-16rem)] bg-surface-container-low dark:bg-surface-container-lowest text-primary dark:text-primary-fixed-dim font-label-md text-label-md border-t border-outline-variant dark:border-outline shadow-sm z-40">
       <div className="flex justify-between items-center px-xl py-md opacity-85 hover:opacity-100 transition-opacity">
         <div className="flex items-center gap-md">
-          <span className="font-bold text-on-surface">AI PROCUREMENT</span>
+          <span className="font-bold text-on-surface">PROCURESCORE</span>
           <span className="text-on-surface-variant opacity-70">
-            &copy; 2024 Enterprise AI Procurement. Trust Score: Verified.
+            &copy; 2026 ProcureScore. Responsible AI procurement.
           </span>
         </div>
         <div className="flex gap-xl text-on-surface-variant font-medium">

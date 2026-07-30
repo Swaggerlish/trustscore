@@ -4,12 +4,18 @@ import Dashboard from './pages/Dashboard';
 import Assessment from './pages/Assessment';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import LandingPage from './pages/LandingPage';
 
 export default function App() {
+  const [pathname, setPathname] = useState(() => window.location.pathname);
   const [activePage, setActivePage] = useState('dashboard');
   const [assessmentHistory, setAssessmentHistory] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('trustscore_assessments') || '[]');
+      return JSON.parse(
+        localStorage.getItem('procurescore_assessments') ||
+        localStorage.getItem('trustscore_assessments') ||
+        '[]'
+      );
     } catch {
       return [];
     }
@@ -18,7 +24,19 @@ export default function App() {
 
   const saveAssessmentHistory = (nextHistory) => {
     setAssessmentHistory(nextHistory);
-    localStorage.setItem('trustscore_assessments', JSON.stringify(nextHistory));
+    localStorage.setItem('procurescore_assessments', JSON.stringify(nextHistory));
+  };
+
+  React.useEffect(() => {
+    const handlePopState = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (path) => {
+    window.history.pushState({}, '', path);
+    setPathname(path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleAssessmentEvaluated = (assessment) => {
@@ -43,6 +61,10 @@ export default function App() {
     () => assessmentHistory.length,
     [assessmentHistory]
   );
+
+  if (pathname === '/') {
+    return <LandingPage onGetStarted={() => navigateTo('/dashboard')} />;
+  }
 
   return (
     <Layout activePage={activePage} latestAssessment={latestAssessment} onNavigate={setActivePage}>

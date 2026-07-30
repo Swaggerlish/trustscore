@@ -50,66 +50,33 @@ function downloadJsonReport(report) {
     [JSON.stringify(report, null, 2)],
     { type: 'application/json' }
   );
-  triggerDownload(reportBlob, `${fileSafeName(report.name)}-trustscore-report.json`);
+  triggerDownload(reportBlob, `${fileSafeName(report.name)}-procurescore-report.json`);
 }
 
 function downloadPdfReport(report) {
-  const lines = buildPdfLines(report);
   const pdfBlob = new Blob(
-    [createSimplePdf(lines)],
+    [createVisualPdf(report)],
     { type: 'application/pdf' }
   );
-  triggerDownload(pdfBlob, `${fileSafeName(report.name)}-trustscore-report.pdf`);
+  triggerDownload(pdfBlob, `${fileSafeName(report.name)}-procurescore-report.pdf`);
 }
 
-function buildPdfLines(report) {
-  const scoreLines = Object.entries(report.scores || {}).map(([label, value]) => (
-    `${titleCase(label)}: ${formatPercent(value)}`
-  ));
-  const metricLines = Object.entries(report.metrics || {})
-    .filter(([, value]) => value !== undefined && value !== null)
-    .map(([label, value]) => `${titleCase(label)}: ${value}`);
-  const recommendationLines = (report.recommendations || []).length
-    ? report.recommendations.map((item) => `- ${item}`)
-    : ['No open recommendations recorded.'];
-
-  return [
-    'TrustScore Assessment Report',
-    '',
-    `Vendor: ${report.name || 'Unnamed AI Vendor'}`,
-    `Category: ${report.category || 'AI Procurement Assessment'}`,
-    `Date: ${report.date || new Date().toLocaleDateString()}`,
-    `Status: ${report.status || 'Completed'}`,
-    `Overall Trust Score: ${formatPercent(report.score)}`,
-    `Risk Level: ${report.riskLevel || 'Medium'}`,
-    '',
-    'Score Breakdown',
-    ...scoreLines,
-    '',
-    'Bias and Fairness Metrics',
-    ...(metricLines.length ? metricLines : ['No detailed bias metrics available.']),
-    '',
-    'Recommendations',
-    ...recommendationLines
-  ];
-}
-
-function createSimplePdf(lines) {
-  const wrappedLines = lines.flatMap((line) => wrapLine(String(line), 90));
-  const pageLines = chunk(wrappedLines, 42);
+function createVisualPdf(report) {
+  const pages = [createOverviewPage(report), ...createDetailPages(report)];
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     null,
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'
   ];
   const pageObjectNumbers = [];
 
-  pageLines.forEach((linesForPage, index) => {
-    const pageObjectNumber = 4 + (index * 2);
+  pages.forEach((pageContent, index) => {
+    const pageObjectNumber = 5 + (index * 2);
     const contentObjectNumber = pageObjectNumber + 1;
     pageObjectNumbers.push(pageObjectNumber);
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`);
-    objects.push(createPageContent(linesForPage));
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`);
+    objects.push(`stream\n${pageContent}\nendstream`);
   });
 
   objects[1] = `<< /Type /Pages /Kids [${pageObjectNumbers.map((page) => `${page} 0 R`).join(' ')}] /Count ${pageObjectNumbers.length} >>`;
@@ -136,14 +103,138 @@ function createSimplePdf(lines) {
   return pdf;
 }
 
-function createPageContent(lines) {
-  const text = lines.map((line, index) => {
-    const y = 742 - (index * 16);
-    const fontSize = index === 0 ? 18 : 10;
-    return `BT /F1 ${fontSize} Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
-  }).join('\n');
+function createOverviewPage(report) {
+  const score = clampScore(report.score);
+  const risk = String(report.riskLevel || 'Medium');
+  const riskColor = risk.toLowerCase() === 'low' ? [0.04, 0.55, 0.34] : risk.toLowerCase() === 'high' ? [0.76, 0.12, 0.16] : [0.9, 0.55, 0.06];
+  const commands = [
+    fill(0.97, 0.98, 0.99), rect(0, 0, 612, 792, 'f'),
+    fill(0.02, 0.12, 0.27), rect(0, 650, 612, 142, 'f'),
+    fill(0, 0.35, 0.75), rect(40, 738, 30, 30, 'f'),
+    text('PS', 47, 748, 12, true, [1, 1, 1]),
+    text('PROCURESCORE', 80, 754, 10, true, [0.45, 0.72, 1]),
+    text('AI Trustworthiness Assessment', 40, 708, 25, true, [1, 1, 1]),
+    text(safeText(report.name || 'Unnamed AI Vendor'), 40, 679, 14, false, [0.82, 0.87, 0.94]),
+    card(40, 525, 170, 98),
+    text('OVERALL TRUST SCORE', 55, 596, 8, true, [0.38, 0.44, 0.53]),
+    text(String(Math.round(score)), 55, 548, 38, true, [0, 0.35, 0.75]),
+    text('/ 100', 105, 552, 11, true, [0.38, 0.44, 0.53]),
+    fill(0.88, 0.91, 0.95), rect(55, 535, 140, 7, 'f'),
+    fill(...scoreColor(score)), rect(55, 535, 1.4 * score, 7, 'f'),
+    card(225, 525, 160, 98),
+    text('RISK CLASSIFICATION', 240, 596, 8, true, [0.38, 0.44, 0.53]),
+    fill(...riskColor), rect(240, 548, 130, 29, 'f'),
+    text(`${safeText(risk).toUpperCase()} RISK`, 252, 558, 12, true, [1, 1, 1]),
+    text('Risk-aware weighted result', 240, 535, 8, false, [0.38, 0.44, 0.53]),
+    card(400, 525, 172, 98),
+    text('ASSESSMENT DETAILS', 415, 596, 8, true, [0.38, 0.44, 0.53]),
+    text(`Date  ${safeText(report.date || new Date().toLocaleDateString())}`, 415, 574, 9, false, [0.12, 0.16, 0.22]),
+    text(`Status  ${safeText(report.status || 'Completed')}`, 415, 556, 9, false, [0.12, 0.16, 0.22]),
+    text(safeText(report.category || 'AI Procurement Assessment', 27), 415, 538, 8, false, [0.38, 0.44, 0.53]),
+    text('TRUSTWORTHINESS SCORECARD', 40, 494, 10, true, [0.08, 0.12, 0.19])
+  ];
 
-  return `stream\n${text}\nendstream`;
+  const scoreEntries = Object.entries(report.scores || {});
+  const labels = {
+    bias: 'Bias & Fairness', datasetQuality: 'Dataset Quality', modelArchitecture: 'Model Architecture',
+    privacy: 'Privacy & Security', compliance: 'Compliance', transparency: 'Transparency',
+    environmentalImpact: 'Environmental Impact', accountability: 'Accountability',
+    performance: 'Performance', robustness: 'Robustness'
+  };
+  scoreEntries.slice(0, 10).forEach(([key, value], index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    metricCard(commands, 40 + (col * 273), 421 - (row * 72), 259, 58, labels[key] || titleCase(key), value);
+  });
+  commands.push(...footer(1));
+  return commands.join('\n');
+}
+
+function createDetailPages(report) {
+  const recommendations = report.recommendations?.length
+    ? report.recommendations
+    : ['No open recommendations recorded. Continue routine monitoring and evidence review.'];
+  const recommendationGroups = chunk(recommendations, 5);
+  return recommendationGroups.map((group, pageIndex) => {
+    const commands = [
+      fill(0.97, 0.98, 0.99), rect(0, 0, 612, 792, 'f'),
+      fill(0.02, 0.12, 0.27), rect(0, 712, 612, 80, 'f'),
+      text('PROCURESCORE', 40, 755, 10, true, [0.45, 0.72, 1]),
+      text('Evidence & Recommendations', 40, 729, 19, true, [1, 1, 1]),
+      text('ASSESSMENT EVIDENCE', 40, 676, 10, true, [0.08, 0.12, 0.19])
+    ];
+    const metrics = Object.entries(report.metrics || {}).filter(([, value]) => value !== undefined && value !== null);
+    const evidence = metrics.slice(0, 4);
+    if (evidence.length) {
+      evidence.forEach(([label, value], index) => {
+        const x = 40 + ((index % 2) * 273);
+        const y = 611 - (Math.floor(index / 2) * 77);
+        commands.push(card(x, y, 259, 62), text(titleCase(label).toUpperCase(), x + 14, y + 39, 7, true, [0.38, 0.44, 0.53]), text(safeMetricValue(value), x + 14, y + 18, 10, true, [0.08, 0.12, 0.19]));
+      });
+    } else {
+      commands.push(card(40, 602, 532, 60), text('Detailed evidence metrics were not supplied for this assessment.', 55, 628, 10, false, [0.38, 0.44, 0.53]));
+    }
+    commands.push(text('RECOMMENDED ACTIONS', 40, 485, 10, true, [0.08, 0.12, 0.19]));
+    let y = 440;
+    group.forEach((item, index) => {
+      const lines = wrapLine(safeText(item), 72).slice(0, 3);
+      const height = 45 + ((lines.length - 1) * 12);
+      commands.push(card(40, y - height + 16, 532, height), fill(0, 0.35, 0.75), rect(54, y - 3, 22, 22, 'f'), text(String((pageIndex * 5) + index + 1), 61, y + 4, 9, true, [1, 1, 1]));
+      lines.forEach((line, lineIndex) => commands.push(text(line, 89, y + 5 - (lineIndex * 13), 9, lineIndex === 0, [0.12, 0.16, 0.22])));
+      y -= height + 10;
+    });
+    commands.push(...footer(pageIndex + 2));
+    return commands.join('\n');
+  });
+}
+
+function metricCard(commands, x, y, width, height, label, value) {
+  const score = typeof value === 'number' ? clampScore(value) : null;
+  commands.push(card(x, y, width, height));
+  commands.push(text(safeText(label).toUpperCase(), x + 13, y + 36, 7, true, [0.38, 0.44, 0.53]));
+  commands.push(text(score === null ? 'Pending' : `${Math.round(score)}%`, x + width - 48, y + 34, 10, true, score === null ? [0.38, 0.44, 0.53] : scoreColor(score)));
+  commands.push(fill(0.88, 0.91, 0.95), rect(x + 13, y + 14, width - 26, 6, 'f'));
+  if (score !== null) commands.push(fill(...scoreColor(score)), rect(x + 13, y + 14, (width - 26) * score / 100, 6, 'f'));
+}
+
+function card(x, y, width, height) {
+  return `${fill(1, 1, 1)}\n${stroke(0.86, 0.89, 0.93)}\n${rect(x, y, width, height, 'B')}`;
+}
+
+function footer(page) {
+  return [stroke(0.86, 0.89, 0.93), '40 31 m 572 31 l S', text('ProcureScore - Evidence-based AI procurement', 40, 16, 7, false, [0.38, 0.44, 0.53]), text(`Page ${page}`, 540, 16, 7, true, [0.38, 0.44, 0.53])];
+}
+
+function text(value, x, y, size = 10, bold = false, color = [0, 0, 0]) {
+  return `${fill(...color)}\nBT /${bold ? 'F2' : 'F1'} ${size} Tf ${x} ${y} Td (${escapePdfText(safeText(value))}) Tj ET`;
+}
+
+function rect(x, y, width, height, operation = 'f') {
+  return `${x} ${y} ${width} ${height} re ${operation}`;
+}
+
+function fill(r, g, b) { return `${r} ${g} ${b} rg`; }
+function stroke(r, g, b) { return `${r} ${g} ${b} RG`; }
+
+function scoreColor(score) {
+  return score < 40 ? [0.76, 0.12, 0.16] : score < 60 ? [0.9, 0.55, 0.06] : [0, 0.35, 0.75];
+}
+
+function clampScore(value) {
+  return Math.max(0, Math.min(100, Number(value) || 0));
+}
+
+function safeMetricValue(value) {
+  if (typeof value === 'number') return String(Math.round(value * 1000) / 1000);
+  if (typeof value === 'object') return safeText(JSON.stringify(value), 38);
+  return safeText(String(value), 38);
+}
+
+function safeText(value, maxLength = 120) {
+  return String(value ?? '')
+    .normalize('NFKD')
+    .replace(/[^\x20-\x7E]/g, '')
+    .slice(0, maxLength);
 }
 
 function triggerDownload(blob, filename) {

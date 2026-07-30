@@ -13,7 +13,7 @@ export default function Sidebar({ activePage, onNavigate }) {
       {/* Brand Header */}
       <div className="mb-xl px-sm">
         <h1 className="font-headline-md text-headline-md font-bold text-on-surface dark:text-inverse-on-surface">
-          AI Procurement
+          ProcureScore
         </h1>
         <p className="font-label-md text-label-md opacity-70">Enterprise Tier</p>
       </div>
