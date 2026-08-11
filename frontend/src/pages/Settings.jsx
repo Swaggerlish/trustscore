@@ -160,7 +160,7 @@ export default function Settings({ savedAssessmentCount = 0 }) {
               Choose destinations for assessment results and high-risk alerts.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-sm mb-lg">
+          <div className="grid grid-cols-1 gap-sm mb-lg xs:grid-cols-3 sm:grid-cols-3">
             {NOTIFICATION_OPTIONS.map((option) => (
               <button
                 key={option.id}

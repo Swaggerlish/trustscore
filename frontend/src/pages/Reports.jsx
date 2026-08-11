@@ -25,10 +25,10 @@ export default function Reports({ assessmentHistory = [], onDeleteAssessment, on
             Review completed procurement assessments, governance scores, and recommended mitigations.
           </p>
         </div>
-        <div className="flex gap-md">
+        <div className="flex flex-col gap-sm sm:flex-row sm:gap-md">
           <button
             onClick={() => onNavigate('assessment')}
-            className="px-lg py-md rounded-lg border border-outline-variant font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors"
+            className="w-full px-lg py-md rounded-lg border border-outline-variant font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors sm:w-auto"
           >
             New Assessment
           </button>
@@ -44,7 +44,7 @@ export default function Reports({ assessmentHistory = [], onDeleteAssessment, on
             </select>
             <button
               onClick={handleDownload}
-              className="px-lg py-md bg-primary text-on-primary font-body-md font-bold hover:bg-primary-container transition-colors flex items-center gap-sm"
+              className="flex flex-1 items-center justify-center gap-sm px-lg py-md bg-primary text-on-primary font-body-md font-bold hover:bg-primary-container transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]">download</span>
               Download
@@ -61,7 +61,7 @@ export default function Reports({ assessmentHistory = [], onDeleteAssessment, on
 
       {selectedReport ? (
       <div className="grid grid-cols-12 gap-lg">
-        <section className="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl p-xl shadow-sm">
+        <section className="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl p-md sm:p-xl shadow-sm">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-lg mb-xl">
             <div>
               <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">
@@ -143,7 +143,7 @@ export default function Reports({ assessmentHistory = [], onDeleteAssessment, on
         </aside>
       </div>
       ) : (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-xl text-center">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md sm:p-xl text-center">
           <span className="material-symbols-outlined text-primary text-[40px]">assignment</span>
           <h3 className="mt-md font-headline-md text-headline-md font-bold text-on-surface">
             No Reports Available

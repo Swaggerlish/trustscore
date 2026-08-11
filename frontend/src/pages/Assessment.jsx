@@ -255,14 +255,14 @@ export default function Assessment({ onAssessmentEvaluated }) {
             ></div>
           </div>
         </div>
-        <div className="flex gap-md flex-wrap">
+        <div className="grid w-full grid-cols-1 gap-sm sm:flex sm:w-auto sm:gap-md sm:flex-wrap">
           <button
             onClick={() => setSubmitMessage({ type: 'info', text: 'Assessment draft saved successfully.' })}
-            className="px-lg py-md rounded-lg border border-outline-variant font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors"
+            className="w-full px-lg py-md rounded-lg border border-outline-variant font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors sm:w-auto"
           >
             Save Draft
           </button>
-          <div className="flex overflow-hidden rounded-lg border border-outline-variant">
+          <div className="flex w-full overflow-hidden rounded-lg border border-outline-variant sm:w-auto">
             <select
               value={downloadFormat}
               onChange={(event) => setDownloadFormat(event.target.value)}
@@ -274,7 +274,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
             </select>
             <button
               onClick={handleDownloadReport}
-              className="px-lg py-md bg-surface font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-sm"
+              className="flex flex-1 items-center justify-center gap-sm px-md sm:px-lg py-md bg-surface font-body-md font-bold text-on-surface-variant hover:bg-surface-container transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]">download</span>
               Download
@@ -283,7 +283,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-lg py-md rounded-lg bg-primary text-on-primary font-body-md font-bold hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50"
+            className="w-full px-lg py-md rounded-lg bg-primary text-on-primary font-body-md font-bold hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50 sm:w-auto"
           >
             {isSubmitting ? 'Evaluating...' : 'Submit Assessment'}
           </button>
@@ -326,7 +326,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
           <h2 className="font-label-md text-label-md text-outline uppercase tracking-wider px-md mb-md">
             Assessment Sections
           </h2>
-          <div className="space-y-1 max-h-[calc(100vh-12rem)] overflow-y-auto pr-xs">
+          <div className="flex gap-sm overflow-x-auto pb-sm lg:block lg:space-y-1 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-xs">
             {SECTIONS.map((section) => {
               const isActive = activeTab === section.id;
               const isDefaultAllowed = true;
@@ -335,7 +335,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
                 <button
                   key={section.id}
                   onClick={() => setActiveTab(section.id)}
-                  className={`w-full flex items-center gap-md p-md rounded-lg text-left transition-all ${
+                  className={`flex shrink-0 items-center gap-sm p-md rounded-lg text-left transition-all lg:w-full lg:gap-md ${
                     isActive
                       ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
                       : isDefaultAllowed

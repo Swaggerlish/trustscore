@@ -103,17 +103,17 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
 
       {/* Main Data Table Container */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-visible mb-xl shadow-sm">
-        <div className="px-xl py-lg border-b border-outline-variant flex justify-between items-center flex-wrap gap-md">
+        <div className="px-md sm:px-xl py-lg border-b border-outline-variant flex justify-between items-center flex-wrap gap-md">
           <div>
             <h3 className="font-headline-md text-headline-md text-on-surface">Recent Assessments</h3>
             <p className="font-body-md text-body-md text-on-surface-variant">
               Saved assessment results persist in this browser until you delete them.
             </p>
           </div>
-          <div className="flex gap-md relative">
+          <div className="flex w-full gap-sm sm:w-auto sm:gap-md relative">
             <button
               onClick={() => setShowFilters((isOpen) => !isOpen)}
-              className={`flex items-center gap-sm px-md py-sm border rounded-lg hover:bg-surface-container-low transition-colors font-label-md text-label-md ${
+              className={`flex flex-1 sm:flex-none items-center justify-center gap-sm px-md py-sm border rounded-lg hover:bg-surface-container-low transition-colors font-label-md text-label-md ${
                 activeFilterCount
                   ? 'border-primary text-primary bg-primary-container/10'
                   : 'border-outline-variant text-on-surface-variant'
@@ -124,13 +124,13 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
             </button>
             <button
               onClick={() => onNavigate('reports')}
-              className="flex items-center gap-sm px-md py-sm border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-label-md text-label-md"
+              className="flex flex-1 sm:flex-none items-center justify-center gap-sm px-md py-sm border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors font-label-md text-label-md"
             >
               <span className="material-symbols-outlined">download</span>
               Export
             </button>
             {showFilters && (
-              <div className="absolute right-0 top-12 z-50 w-80 max-h-[calc(100vh-12rem)] overflow-y-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-xl">
+              <div className="absolute left-0 right-0 top-12 z-50 max-h-[calc(100dvh-12rem)] overflow-y-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-xl sm:left-auto sm:w-80 sm:p-lg">
                 <div className="flex items-center justify-between mb-md">
                   <h4 className="font-body-md font-bold text-on-surface">Filter Assessments</h4>
                   <button
@@ -191,7 +191,7 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="min-w-[760px] w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/50">
                 <th className="px-xl py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
@@ -291,9 +291,9 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
           <div className="p-lg border-b border-outline-variant">
             <h4 className="font-headline-md text-headline-md text-on-surface">Trust Matrix Distribution</h4>
           </div>
-          <div className="flex-1 relative p-xl flex items-center justify-center">
+          <div className="flex-1 relative p-md sm:p-xl flex items-center justify-center overflow-x-auto">
             {/* Visual Chart Representation */}
-            <div className="w-full h-56 flex items-end justify-between gap-md">
+            <div className="min-w-[440px] w-full h-56 flex items-end justify-between gap-md">
               {trustDistribution.map((bucket) => (
                 <div key={bucket.label} className="flex-1 flex flex-col items-center gap-sm">
                   <div

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-export default function Header({ activePage, latestAssessment, onNavigate }) {
+export default function Header({ activePage, latestAssessment, onNavigate, onMenuClick }) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [readNotificationIds, setReadNotificationIds] = useState([]);
   const notifications = useMemo(
@@ -35,10 +35,11 @@ export default function Header({ activePage, latestAssessment, onNavigate }) {
 
   return (
     <header className="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim border-b border-outline-variant dark:border-outline flat no shadows z-40 sticky top-0">
-      <div className="flex justify-between items-center h-16 px-xl w-full max-w-max_width ml-auto transition-all duration-200">
+      <div className="flex h-16 w-full items-center justify-between px-md sm:px-lg lg:px-xl transition-all duration-200">
         {/* Title and Search */}
-        <div className="flex items-center gap-lg flex-1">
-          <span className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim whitespace-nowrap">
+        <div className="flex min-w-0 flex-1 items-center gap-sm sm:gap-lg">
+          <button onClick={onMenuClick} className="shrink-0 p-2 text-on-surface-variant lg:hidden" aria-label="Open navigation"><span className="material-symbols-outlined">menu</span></button>
+          <span className="truncate font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">
             {getTitle()}
           </span>
           <div className="relative hidden lg:block w-full max-w-md ml-lg">
@@ -54,7 +55,7 @@ export default function Header({ activePage, latestAssessment, onNavigate }) {
         </div>
 
         {/* Action icons & User profile info */}
-        <div className="flex items-center gap-md lg:gap-lg ml-xl">
+        <div className="ml-sm flex shrink-0 items-center gap-xs sm:ml-lg sm:gap-md lg:gap-lg">
           <div className="relative">
           <button
             onClick={toggleNotifications}
@@ -71,7 +72,7 @@ export default function Header({ activePage, latestAssessment, onNavigate }) {
             )}
           </button>
           {isNotificationsOpen && (
-            <div className="absolute right-0 top-12 z-50 w-96 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface shadow-xl">
+            <div className="fixed inset-x-md top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-96">
               <div className="flex items-center justify-between gap-md border-b border-outline-variant px-lg py-md">
                 <div>
                   <h3 className="font-body-md font-bold text-on-surface">Notifications</h3>
@@ -127,14 +128,14 @@ export default function Header({ activePage, latestAssessment, onNavigate }) {
             </div>
           )}
           </div>
-          <button className="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200">
+          <button className="hidden p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all duration-200 sm:block">
             <span className="material-symbols-outlined">help_outline</span>
           </button>
 
           {activePage === 'dashboard' && (
             <button
               onClick={() => onNavigate('assessment')}
-              className="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md font-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-sm"
+              className="hidden bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md font-bold hover:brightness-110 active:scale-95 transition-all items-center gap-sm md:flex"
             >
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'wght' 600" }}>
                 add
@@ -143,7 +144,7 @@ export default function Header({ activePage, latestAssessment, onNavigate }) {
             </button>
           )}
 
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high ml-sm border border-outline-variant">
+          <div className="hidden w-8 h-8 rounded-full overflow-hidden bg-surface-container-high ml-sm border border-outline-variant sm:block">
             <img
               alt="User Avatar"
               className="w-full h-full object-cover"
