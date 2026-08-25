@@ -9,6 +9,7 @@ import LandingPage from './pages/LandingPage';
 export default function App() {
   const [pathname, setPathname] = useState(() => window.location.pathname);
   const [activePage, setActivePage] = useState('dashboard');
+  const [selectedReportId, setSelectedReportId] = useState(null);
   const [assessmentHistory, setAssessmentHistory] = useState(() => {
     try {
       return JSON.parse(
@@ -57,6 +58,13 @@ export default function App() {
     saveAssessmentHistory(assessmentHistory.filter((item) => item.id !== assessmentId));
   };
 
+  const navigateToPage = (page, reportId = null) => {
+    if (page === 'reports' && reportId) {
+      setSelectedReportId(reportId);
+    }
+    setActivePage(page);
+  };
+
   const savedAssessmentCount = useMemo(
     () => assessmentHistory.length,
     [assessmentHistory]
@@ -67,12 +75,12 @@ export default function App() {
   }
 
   return (
-    <Layout activePage={activePage} latestAssessment={latestAssessment} onNavigate={setActivePage}>
+    <Layout activePage={activePage} latestAssessment={latestAssessment} onNavigate={navigateToPage}>
       {activePage === 'dashboard' && (
         <Dashboard
           assessmentHistory={assessmentHistory}
           onDeleteAssessment={handleDeleteAssessment}
-          onNavigate={setActivePage}
+          onNavigate={navigateToPage}
         />
       )}
       {activePage === 'assessment' && (
@@ -82,7 +90,8 @@ export default function App() {
         <Reports
           assessmentHistory={assessmentHistory}
           onDeleteAssessment={handleDeleteAssessment}
-          onNavigate={setActivePage}
+          onNavigate={navigateToPage}
+          selectedReportId={selectedReportId}
         />
       )}
       {activePage === 'settings' && (

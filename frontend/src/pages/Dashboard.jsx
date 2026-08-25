@@ -215,7 +215,7 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
               {filteredAssessments.map((vendor, index) => (
                 <tr
                   key={`${vendor.name}-${vendor.date}`}
-                  onClick={() => onNavigate('assessment')}
+                  onClick={() => onNavigate('reports', vendor.id)}
                   className="hover:bg-surface-container-low/30 transition-colors group cursor-pointer"
                 >
                   <td className="px-xl py-lg">

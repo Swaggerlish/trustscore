@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { downloadReport } from '../utils/reportExport';
 
-export default function Reports({ assessmentHistory = [], onDeleteAssessment, onNavigate }) {
+export default function Reports({ assessmentHistory = [], onDeleteAssessment, onNavigate, selectedReportId }) {
   const [downloadFormat, setDownloadFormat] = useState('pdf');
   const reports = assessmentHistory.map(normalizeReport);
-  const selectedReport = reports[0];
+  const selectedReport = reports.find((report) => report.id === selectedReportId) || reports[0];
 
   const handleDownload = () => {
     if (!selectedReport) {
