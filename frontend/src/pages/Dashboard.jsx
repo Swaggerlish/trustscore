@@ -295,19 +295,21 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
             {/* Visual Chart Representation */}
             <div className="min-w-[440px] w-full h-56 flex items-end justify-between gap-md">
               {trustDistribution.map((bucket) => (
-                <div key={bucket.label} className="flex-1 flex flex-col items-center gap-sm">
-                  <div
-                    className={`w-full rounded-t-lg transition-all flex flex-col justify-end items-center pb-2 ${
-                      bucket.count
-                        ? bucket.colorClass
-                        : 'bg-surface-container-high text-on-surface-variant'
-                    }`}
-                    style={{ height: `${Math.max(12, bucket.height)}%` }}
-                    title={`${bucket.count} assessment${bucket.count === 1 ? '' : 's'}`}
-                  >
-                    <span className="text-label-md font-bold">
-                      {bucket.count}
-                    </span>
+                <div key={bucket.label} className="flex-1 h-full flex flex-col items-center gap-sm">
+                  <div className="w-full flex-1 flex items-end">
+                    <div
+                      className={`w-full rounded-t-lg transition-all flex flex-col justify-end items-center pb-2 ${
+                        bucket.count
+                          ? bucket.colorClass
+                          : 'bg-surface-container-high text-on-surface-variant'
+                      }`}
+                      style={{ height: `${Math.max(12, bucket.height)}%` }}
+                      title={`${bucket.count} assessment${bucket.count === 1 ? '' : 's'}`}
+                    >
+                      <span className="text-label-md font-bold">
+                        {bucket.count}
+                      </span>
+                    </div>
                   </div>
                   <div className="text-center">
                     <p className="font-label-md text-label-md font-bold text-on-surface">
@@ -416,11 +418,11 @@ function classifyScore(score) {
 
 function buildTrustDistribution(assessments) {
   const buckets = [
-    { label: 'Critical', range: '0-39%', min: 0, max: 39, count: 0, colorClass: 'bg-error text-white' },
-    { label: 'High Risk', range: '40-59%', min: 40, max: 59, count: 0, colorClass: 'bg-error/80 text-white' },
-    { label: 'Medium', range: '60-79%', min: 60, max: 79, count: 0, colorClass: 'bg-tertiary text-on-primary' },
-    { label: 'Trusted', range: '80-89%', min: 80, max: 89, count: 0, colorClass: 'bg-primary-container text-on-primary-container' },
-    { label: 'Elite', range: '90-100%', min: 90, max: 100, count: 0, colorClass: 'bg-primary text-on-primary' }
+    { label: 'Critical', range: '0-39%', min: 0, max: 39, count: 0, totalScore: 0, colorClass: 'bg-error text-white' },
+    { label: 'High Risk', range: '40-59%', min: 40, max: 59, count: 0, totalScore: 0, colorClass: 'bg-error/80 text-white' },
+    { label: 'Medium', range: '60-79%', min: 60, max: 79, count: 0, totalScore: 0, colorClass: 'bg-tertiary text-on-primary' },
+    { label: 'Trusted', range: '80-89%', min: 80, max: 89, count: 0, totalScore: 0, colorClass: 'bg-primary-container text-on-primary-container' },
+    { label: 'Elite', range: '90-100%', min: 90, max: 100, count: 0, totalScore: 0, colorClass: 'bg-primary text-on-primary' }
   ];
 
   assessments.forEach((assessment) => {
@@ -428,12 +430,12 @@ function buildTrustDistribution(assessments) {
     const bucket = buckets.find((item) => score >= item.min && score <= item.max);
     if (bucket) {
       bucket.count += 1;
+      bucket.totalScore += score;
     }
   });
 
-  const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count));
   return buckets.map((bucket) => ({
     ...bucket,
-    height: bucket.count ? (bucket.count / maxCount) * 100 : 12
+    height: bucket.count ? bucket.totalScore / bucket.count : 12
   }));
 }

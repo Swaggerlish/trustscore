@@ -163,8 +163,7 @@ function createDetailPages(report) {
       text('Evidence & Recommendations', 40, 729, 19, true, [1, 1, 1]),
       text('ASSESSMENT EVIDENCE', 40, 676, 10, true, [0.08, 0.12, 0.19])
     ];
-    const metrics = Object.entries(report.metrics || {}).filter(([, value]) => value !== undefined && value !== null);
-    const evidence = metrics.slice(0, 4);
+    const evidence = getEvidenceForRecommendations(report, group, pageIndex);
     if (evidence.length) {
       evidence.forEach(([label, value], index) => {
         const x = 40 + ((index % 2) * 273);
@@ -186,6 +185,38 @@ function createDetailPages(report) {
     commands.push(...footer(pageIndex + 2));
     return commands.join('\n');
   });
+}
+
+function getEvidenceForRecommendations(report, recommendations, pageIndex) {
+  const evidenceCatalog = [
+    { key: 'bias', label: 'Bias & Fairness Score', value: report.scores?.bias, terms: ['fairness', 'bias', 'demographic', 'disparate', 'subgroup', 'protected', 'equal opportunity', 'aif360'] },
+    { key: 'demographicParityDifference', label: 'Demographic Parity Difference', value: report.metrics?.demographicParityDifference, terms: ['demographic parity', 'statistical parity', 'fairness'] },
+    { key: 'disparateImpactRatio', label: 'Disparate Impact Ratio', value: report.metrics?.disparateImpactRatio, terms: ['disparate impact', 'four-fifths', 'selection rate'] },
+    { key: 'biasEvaluationMethod', label: 'Bias Evaluation Method', value: report.metrics?.biasEvaluationMethod, terms: ['bias', 'fairness', 'demographic', 'disparate'] },
+    { key: 'datasetQuality', label: 'Dataset Quality Score', value: report.scores?.datasetQuality, terms: ['dataset', 'data quality', 'records', 'lineage', 'licens', 'representative', 'sample'] },
+    { key: 'datasetQualityEvaluationMethod', label: 'Dataset Quality Evaluation Method', value: report.metrics?.datasetQualityEvaluationMethod, terms: ['dataset', 'data quality', 'evidently', 'profil'] },
+    { key: 'dataQualityMetrics', label: 'Data Quality Metrics', value: report.metrics?.dataQualityMetrics, terms: ['dataset', 'data quality', 'records', 'missing', 'duplicate', 'drift'] },
+    { key: 'modelArchitecture', label: 'Model Architecture Score', value: report.scores?.modelArchitecture, terms: ['architecture', 'model', 'training', 'version', 'deployment', 'explainability'] },
+    { key: 'privacy', label: 'Privacy & Security Score', value: report.scores?.privacy, terms: ['privacy', 'encryption', 'anonym', 'access control', 'data minim'] },
+    { key: 'compliance', label: 'Compliance Score', value: report.scores?.compliance, terms: ['compliance', 'gdpr', 'hipaa', 'eu ai act', 'regulatory'] },
+    { key: 'transparency', label: 'Transparency Score', value: report.scores?.transparency, terms: ['transparency', 'disclosure', 'logging', 'limitation', 'model card'] },
+    { key: 'environmentalImpact', label: 'Environmental Impact Score', value: report.scores?.environmentalImpact, terms: ['environment', 'carbon', 'energy', 'emission', 'lifecycle', 'compute'] },
+    { key: 'accountability', label: 'Accountability Score', value: report.scores?.accountability, terms: ['accountability', 'owner', 'oversight', 'incident', 'governance board', 'audit log'] },
+    { key: 'performance', label: 'Performance Score', value: report.scores?.performance, terms: ['performance', 'latency', 'throughput', 'accuracy', 'benchmark', 'monitoring'] },
+    { key: 'robustness', label: 'Robustness Score', value: report.scores?.robustness, terms: ['robustness', 'failure', 'resilien', 'stress', 'adversarial'] }
+  ];
+  const pageText = recommendations.join(' ').toLowerCase();
+  const matchingEvidence = evidenceCatalog.filter((metric) => (
+    metric.value !== undefined
+      && metric.value !== null
+      && metric.terms.some((term) => pageText.includes(term))
+  ));
+  const availableEvidence = evidenceCatalog.filter((metric) => metric.value !== undefined && metric.value !== null);
+  const fallbackEvidence = availableEvidence.filter((metric) => !matchingEvidence.includes(metric));
+  const remainingSlots = Math.max(0, 4 - matchingEvidence.length);
+  const evidence = [...matchingEvidence, ...fallbackEvidence.slice(pageIndex * 2, pageIndex * 2 + remainingSlots)];
+
+  return evidence.slice(0, 4).map(({ label, value }) => [label, value]);
 }
 
 function metricCard(commands, x, y, width, height, label, value) {
