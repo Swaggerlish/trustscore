@@ -427,8 +427,7 @@ function buildTrustDistribution(assessments) {
     { label: 'Unacceptable', range: '0-24%', min: 0, max: 24, count: 0, colorClass: 'bg-error text-white' },
     { label: 'High Risk', range: '25-49%', min: 25, max: 49, count: 0, colorClass: 'bg-orange-500 text-white' },
     { label: 'Limited', range: '50-74%', min: 50, max: 74, count: 0, colorClass: 'bg-yellow-500 text-on-primary' },
-    { label: 'Low Risk', range: '75-89%', min: 75, max: 89, count: 0, colorClass: 'bg-primary-container text-on-primary-container' },
-    { label: 'Very Low Risk', range: '90-100%', min: 90, max: 100, count: 0, colorClass: 'bg-primary text-on-primary' }
+    { label: 'Low Risk', range: '75-100%', min: 75, max: 100, count: 0, colorClass: 'bg-primary-container text-on-primary-container' }
   ];
 
   assessments.forEach((assessment) => {

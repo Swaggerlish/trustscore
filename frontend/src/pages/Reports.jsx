@@ -83,7 +83,7 @@ export default function Reports({ assessmentHistory = [], onDeleteAssessment, on
             <ScoreCard label="Dataset Quality" value={selectedReport.scores?.datasetQuality} />
             <ScoreCard label="Model Architecture" value={selectedReport.scores?.modelArchitecture} />
             <ScoreCard label="Privacy & Security" value={selectedReport.scores?.privacy} />
-            <ScoreCard label="Compliance" value={selectedReport.scores?.compliance} />
+            <ScoreCard label="Risk Assessment" value={selectedReport.scores?.compliance} />
             <ScoreCard label="Transparency" value={selectedReport.scores?.transparency} />
             <ScoreCard label="Environmental Impact" value={selectedReport.scores?.environmentalImpact} />
             <ScoreCard label="Accountability" value={selectedReport.scores?.accountability} />

@@ -46,16 +46,12 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
 
       {/* User Footer Profile */}
       <div className="mt-auto pt-lg border-t border-outline-variant flex items-center gap-md px-sm">
-        <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container overflow-hidden">
-          <img
-            alt="User Avatar"
-            className="w-full h-full object-cover"
-            src="/avatar.jpg"
-          />
+        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary">
+          <span className="material-symbols-outlined">person</span>
         </div>
         <div className="overflow-hidden">
-          <p className="font-body-md text-body-md font-bold truncate">Abiodun Akindipe</p>
-          <p className="font-label-md text-label-md opacity-70 truncate">Procurement Officer</p>
+          <p className="font-label-md text-label-md text-on-surface-variant truncate">Role</p>
+          <p className="font-body-md text-body-md font-bold truncate">Procurement Officer</p>
         </div>
       </div>
     </aside>

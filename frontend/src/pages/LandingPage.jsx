@@ -4,7 +4,7 @@ const metrics = [
   ['balance', 'Bias & Fairness', 'Identifies unequal outcomes and discriminatory patterns.', 'IBM AI Fairness 360 metrics, including Statistical Parity Difference and Disparate Impact.'],
   ['dataset', 'Dataset Quality', 'Examines whether the data is reliable and fit for purpose.', 'Evidently AI checks for completeness, missing values, imbalance, and quality indicators.'],
   ['shield_lock', 'Privacy & Security', 'Reviews how sensitive data and system access are protected.', 'Encryption, anonymization, access controls, and data-minimization evidence.'],
-  ['gavel', 'Compliance', 'Maps the system to relevant legal and regulatory obligations.', 'Alignment with GDPR, the EU AI Act, HIPAA, and other applicable requirements.'],
+  ['gavel', 'Risk Assessment', 'Maps the system to relevant legal and regulatory obligations.', 'Alignment with GDPR, the EU AI Act, HIPAA, and other applicable requirements.'],
   ['account_tree', 'Accountability', 'Confirms that responsibility and escalation paths are clear.', 'Ownership, auditability, human oversight, and incident-response readiness.'],
   ['visibility', 'Transparency', 'Determines whether stakeholders can understand the system and its limits.', 'Documentation quality, model cards, explainability, and limitation disclosures.'],
   ['architecture', 'Model Architecture', 'Reviews the technical foundation and deployment approach.', 'Architecture records, training methodology, deployment design, and explainability mechanisms.'],
@@ -115,7 +115,7 @@ export default function LandingPage({ onGetStarted }) {
             <SectionHeading eyebrow="A rigorous workflow" title="How ProcureScore works" text="A structured assessment combines submitted evidence with specialized evaluators and LLM-assisted verification using Llama 3.1 8B Instruct." />
             <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:items-center">
               <div className="grid gap-3 sm:grid-cols-2">{[
-                ['list_alt', 'Structured self-assessment'], ['upload_file', 'Document upload'], ['neurology', 'LLM-assisted verification'], ['hub', 'Hybrid evaluation engine'], ['tune', 'Dynamic weighted scoring'], ['workspace_premium', 'Trust score generation']
+                ['list_alt', 'Structured self-assessment'], ['upload_file', 'Document upload'], ['neurology', 'LLM-assisted verification'], ['hub', 'Hybrid evaluation engine'], ['tune', 'Simple average scoring'], ['workspace_premium', 'Trust score generation']
               ].map(([icon, label], index) => <div key={label} className="flex items-center gap-4 rounded-xl border border-slate-200 p-4"><span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 text-primary"><Icon>{icon}</Icon></span><div><span className="text-xs font-black text-slate-400">0{index + 1}</span><p className="font-bold">{label}</p></div></div>)}</div>
               <div className="rounded-2xl bg-slate-50 p-6 sm:p-8">
                 <p className="mb-5 text-center text-xs font-black uppercase tracking-widest text-slate-500">Hybrid evaluation engine</p>
@@ -129,12 +129,13 @@ export default function LandingPage({ onGetStarted }) {
 
         <section className="bg-blue-50 py-24">
           <div className="mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[.8fr_1.2fr] lg:items-center lg:px-8">
-            <div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Dynamic risk-aware scoring</p><h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">Strong performance in one area cannot hide critical weaknesses in another.</h2><p className="mt-5 leading-7 text-slate-600">Risk thresholds protect decision makers from misleading averages and surface the weaknesses that require action.</p></div>
+            <div><p className="text-xs font-black uppercase tracking-[.2em] text-primary">Balanced trust scoring</p><h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">Each dimension contributes equally to the final trust score.</h2><p className="mt-5 leading-7 text-slate-600">The overall score is the arithmetic mean of the ten domain scores. There is no penalty for a weaker area; the result reflects the average performance across the assessment.</p></div>
             <div className="space-y-3">{[
-              ['error', 'Below 40', 'Significant penalty applied', 'bg-red-50 text-red-700 border-red-200'],
-              ['warning', 'Below 60', 'Moderate penalty applied', 'bg-amber-50 text-amber-700 border-amber-200'],
-              ['check_circle', 'Otherwise', 'Standard weighted score', 'bg-emerald-50 text-emerald-700 border-emerald-200']
-            ].map(([icon, threshold, result, colors]) => <div key={threshold} className={`flex items-center gap-4 rounded-xl border p-5 ${colors}`}><Icon>{icon}</Icon><div className="flex-1"><p className="text-sm font-bold">If any metric is {threshold.toLowerCase()}</p><p className="text-xs opacity-75">Risk threshold check</p></div><Icon>arrow_forward</Icon><b className="max-w-32 text-right text-sm">{result}</b></div>)}</div>
+              ['error', '0-24', 'Unacceptable risk', 'bg-red-50 text-red-700 border-red-200'],
+              ['warning', '25-49', 'High risk', 'bg-amber-50 text-amber-700 border-amber-200'],
+              ['schedule', '50-74', 'Limited risk', 'bg-yellow-50 text-yellow-700 border-yellow-200'],
+              ['check_circle', '75-100', 'Low risk', 'bg-emerald-50 text-emerald-700 border-emerald-200']
+            ].map(([icon, threshold, result, colors]) => <div key={threshold} className={`flex items-center gap-4 rounded-xl border p-5 ${colors}`}><Icon>{icon}</Icon><div className="flex-1"><p className="text-sm font-bold">Score range: {threshold}</p><p className="text-xs opacity-75">Four-band risk classification</p></div><Icon>arrow_forward</Icon><b className="max-w-32 text-right text-sm">{result}</b></div>)}</div>
           </div>
         </section>
 

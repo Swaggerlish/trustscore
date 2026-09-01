@@ -144,12 +144,8 @@ export default function Header({ activePage, latestAssessment, onNavigate, onMen
             </button>
           )}
 
-          <div className="hidden w-8 h-8 rounded-full overflow-hidden bg-surface-container-high ml-sm border border-outline-variant sm:block">
-            <img
-              alt="User Avatar"
-              className="w-full h-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9AzgKToU2wZn17KHryJ9eUQ9s551NS4bcZaS1pyV2PHLB__DcYo3gj9Cwc92JwI3j9RvRk7Vxr1l0d19I2XqjOeeJ7I7DLXZwADQtYLKCd_kFYVxxnc9EKo5kdwhMdzECIQ-Jta1-nI9vVxRRImo0eBuVL8qYDc6tSbatPT64xAfyFqEy0nadP13FzOW88ZEcUU0tY4sY6t5Sc_aUFsJo2q5LTXr5keQ50k0ZhjzfXuVOXLDaKY2HWmBrkXNam0c1wRPKMiyDVOk"
-            />
+          <div className="hidden w-8 h-8 rounded-full overflow-hidden bg-primary ml-sm border border-outline-variant sm:flex items-center justify-center">
+            <span className="material-symbols-outlined text-on-primary text-xl">person</span>
           </div>
         </div>
       </div>

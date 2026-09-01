@@ -106,6 +106,7 @@ function createVisualPdf(report) {
 function createOverviewPage(report) {
   const score = clampScore(report.score);
   const risk = String(report.riskLevel || 'Limited risk');
+  const riskDisplay = risk.toLowerCase().includes('risk') ? risk.replace(/\s+risk\b/i, '').trim() : risk;
   const riskColor = risk.toLowerCase().includes('low risk') ? [0.04, 0.55, 0.34] : risk.toLowerCase().includes('high risk') ? [0.97, 0.6, 0.2] : risk.toLowerCase().includes('unacceptable') ? [0.76, 0.12, 0.16] : [0.9, 0.55, 0.06];
   const commands = [
     fill(0.97, 0.98, 0.99), rect(0, 0, 612, 792, 'f'),
@@ -124,8 +125,8 @@ function createOverviewPage(report) {
     card(225, 525, 160, 98),
     text('RISK CLASSIFICATION', 240, 596, 8, true, [0.38, 0.44, 0.53]),
     fill(...riskColor), rect(240, 548, 130, 29, 'f'),
-    text(`${safeText(risk).toUpperCase()} RISK`, 252, 558, 12, true, [1, 1, 1]),
-    text('Risk-aware weighted result', 240, 535, 8, false, [0.38, 0.44, 0.53]),
+    text(`${safeText(riskDisplay).toUpperCase()}`, 252, 558, 12, true, [1, 1, 1]),
+    text('Simple average trust result', 240, 535, 8, false, [0.38, 0.44, 0.53]),
     card(400, 525, 172, 98),
     text('ASSESSMENT DETAILS', 415, 596, 8, true, [0.38, 0.44, 0.53]),
     text(`Date  ${safeText(report.date || new Date().toLocaleDateString())}`, 415, 574, 9, false, [0.12, 0.16, 0.22]),
@@ -137,7 +138,7 @@ function createOverviewPage(report) {
   const scoreEntries = Object.entries(report.scores || {});
   const labels = {
     bias: 'Bias & Fairness', datasetQuality: 'Dataset Quality', modelArchitecture: 'Model Architecture',
-    privacy: 'Privacy & Security', compliance: 'Compliance', transparency: 'Transparency',
+    privacy: 'Privacy & Security', compliance: 'Risk Assessment', transparency: 'Transparency',
     environmentalImpact: 'Environmental Impact', accountability: 'Accountability',
     performance: 'Performance', robustness: 'Robustness'
   };

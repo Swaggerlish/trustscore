@@ -16,7 +16,7 @@ const SECTIONS = [
   { id: 'transparency', num: 6, label: 'Transparency', icon: 'visibility', desc: "Document explanation interfaces, decision logging, and model interpretability tools." },
   { id: 'environmental', num: 7, label: 'Environmental Impact', icon: 'eco', desc: "Analyze electricity consumption and compute power usage during model training and deployment." },
   { id: 'accountability', num: 8, label: 'Accountability', icon: 'group', desc: "Configure review boards, compliance tracking, and intervention protocols." },
-  { id: 'risk', num: 9, label: 'Legal Compliance', icon: 'policy', desc: "Assess regulatory compliance, intellectual property protection, and liability frameworks of the AI system." },
+  { id: 'risk', num: 9, label: 'Risk Assessment', icon: 'policy', desc: "Assess regulatory compliance, intellectual property protection, and liability frameworks of the AI system." },
   { id: 'performance', num: 10, label: 'Performance', icon: 'monitor_heart', desc: "Benchmark operations latency, throughput, validation curves, and test score stability." },
   { id: 'robustness', num: 11, label: 'Robustness', icon: 'engineering', desc: "Identify failover limits, drift monitoring thresholds, and defense mechanisms." },
   { id: 'review', num: 12, label: 'Final Review', icon: 'check_circle', desc: "Consolidate evaluation indicators and publish the AI system's finalized trust certificate." }
@@ -506,7 +506,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
                 </span>
               </div>
               <div className="flex justify-between items-center text-body-md">
-                <span className="text-on-surface-variant">Compliance</span>
+                <span className="text-on-surface-variant">Risk Assessment</span>
                 <span className="font-bold text-on-surface">
                   {scoreLabel(assessmentResult?.compliance_score)}
                 </span>
