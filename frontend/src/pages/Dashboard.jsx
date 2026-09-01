@@ -11,7 +11,7 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
   const averageScore = savedAssessments.length
     ? savedAssessments.reduce((total, item) => total + normalizeScore(item), 0) / savedAssessments.length
     : 0;
-  const highRiskCount = savedAssessments.filter((item) => item.riskLevel === 'High').length;
+  const highRiskCount = savedAssessments.filter((item) => ['High risk', 'Unacceptable risk'].includes(item.riskLevel)).length;
   const kpis = [
     {
       title: 'Active Evaluations',
@@ -298,12 +298,12 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
                 <div key={bucket.label} className="flex-1 h-full flex flex-col items-center gap-sm">
                   <div className="w-full flex-1 flex items-end">
                     <div
-                      className={`w-full rounded-t-lg transition-all flex flex-col justify-end items-center pb-2 ${
+                      className={`w-full rounded-t-lg transition-all duration-700 ease-out flex flex-col justify-end items-center pb-2 ${
                         bucket.count
                           ? bucket.colorClass
                           : 'bg-surface-container-high text-on-surface-variant'
                       }`}
-                      style={{ height: `${Math.max(12, bucket.height)}%` }}
+                      style={{ height: `${Math.max(12, bucket.height)}%`, transition: 'height 0.7s ease-out, transform 0.7s ease-out' }}
                       title={`${bucket.count} assessment${bucket.count === 1 ? '' : 's'}`}
                     >
                       <span className="text-label-md font-bold">
@@ -347,9 +347,10 @@ export default function Dashboard({ assessmentHistory = [], onDeleteAssessment, 
 
 function formatLiveAssessment(assessment) {
   const score = Number(assessment.score || 0);
-  const riskLevel = assessment.riskLevel || 'Medium';
-  const isLow = riskLevel === 'Low';
-  const isMedium = riskLevel === 'Medium';
+  const riskLevel = assessment.riskLevel || 'Limited risk';
+  const isLow = riskLevel === 'Low risk';
+  const isLimited = riskLevel === 'Limited risk';
+  const isHigh = riskLevel === 'High risk';
 
   return {
     name: assessment.name,
@@ -358,14 +359,16 @@ function formatLiveAssessment(assessment) {
     status: assessment.status || 'Completed',
     statusClass: isLow
       ? 'bg-green-100 text-green-800'
-      : isMedium
+      : isLimited
       ? 'bg-yellow-100 text-yellow-800'
+      : isHigh
+      ? 'bg-orange-100 text-orange-800'
       : 'bg-red-100 text-red-800',
-    dotClass: isLow ? 'bg-green-600' : isMedium ? 'bg-yellow-600' : 'bg-red-600',
+    dotClass: isLow ? 'bg-green-600' : isLimited ? 'bg-yellow-600' : isHigh ? 'bg-orange-600' : 'bg-red-600',
     score: (score / 10).toFixed(1),
     rawScore: score,
     scoreText: assessment.scoreText,
-    scoreColor: isLow ? 'bg-primary' : isMedium ? 'bg-tertiary' : 'bg-error',
+    scoreColor: isLow ? 'bg-primary' : isLimited ? 'bg-tertiary' : isHigh ? 'bg-orange-500' : 'bg-error',
     scorePercent: `${Math.max(0, Math.min(100, score))}%`,
     date: assessment.date,
     riskLevel,
@@ -407,22 +410,25 @@ function normalizeScore(vendor) {
 }
 
 function classifyScore(score) {
-  if (score >= 80) {
-    return 'Low';
+  if (score < 25) {
+    return 'Unacceptable risk';
   }
-  if (score >= 60) {
-    return 'Medium';
+  if (score < 50) {
+    return 'High risk';
   }
-  return 'High';
+  if (score < 75) {
+    return 'Limited risk';
+  }
+  return 'Low risk';
 }
 
 function buildTrustDistribution(assessments) {
   const buckets = [
-    { label: 'Critical', range: '0-39%', min: 0, max: 39, count: 0, totalScore: 0, colorClass: 'bg-error text-white' },
-    { label: 'High Risk', range: '40-59%', min: 40, max: 59, count: 0, totalScore: 0, colorClass: 'bg-error/80 text-white' },
-    { label: 'Medium', range: '60-79%', min: 60, max: 79, count: 0, totalScore: 0, colorClass: 'bg-tertiary text-on-primary' },
-    { label: 'Trusted', range: '80-89%', min: 80, max: 89, count: 0, totalScore: 0, colorClass: 'bg-primary-container text-on-primary-container' },
-    { label: 'Elite', range: '90-100%', min: 90, max: 100, count: 0, totalScore: 0, colorClass: 'bg-primary text-on-primary' }
+    { label: 'Unacceptable', range: '0-24%', min: 0, max: 24, count: 0, colorClass: 'bg-error text-white' },
+    { label: 'High Risk', range: '25-49%', min: 25, max: 49, count: 0, colorClass: 'bg-orange-500 text-white' },
+    { label: 'Limited', range: '50-74%', min: 50, max: 74, count: 0, colorClass: 'bg-yellow-500 text-on-primary' },
+    { label: 'Low Risk', range: '75-89%', min: 75, max: 89, count: 0, colorClass: 'bg-primary-container text-on-primary-container' },
+    { label: 'Very Low Risk', range: '90-100%', min: 90, max: 100, count: 0, colorClass: 'bg-primary text-on-primary' }
   ];
 
   assessments.forEach((assessment) => {
@@ -430,12 +436,13 @@ function buildTrustDistribution(assessments) {
     const bucket = buckets.find((item) => score >= item.min && score <= item.max);
     if (bucket) {
       bucket.count += 1;
-      bucket.totalScore += score;
     }
   });
 
+  const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count));
+
   return buckets.map((bucket) => ({
     ...bucket,
-    height: bucket.count ? bucket.totalScore / bucket.count : 12
+    height: bucket.count ? (bucket.count / maxCount) * 100 : 8
   }));
 }

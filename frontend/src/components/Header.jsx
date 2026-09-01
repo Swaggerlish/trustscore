@@ -171,13 +171,14 @@ function buildNotifications(latestAssessment) {
   ];
 
   if (latestAssessment) {
+    const risk = latestAssessment.riskLevel || 'Limited risk';
     notifications.unshift({
       id: `assessment-${latestAssessment.name}-${latestAssessment.date}`,
       title: 'Assessment evaluated',
-      body: `${latestAssessment.name} returned ${latestAssessment.score}% with ${latestAssessment.riskLevel} risk.`,
+      body: `${latestAssessment.name} returned ${latestAssessment.score}% with ${risk}.`,
       time: latestAssessment.date || 'Just now',
-      icon: latestAssessment.riskLevel === 'High' ? 'warning' : 'verified',
-      colorClass: latestAssessment.riskLevel === 'High' ? 'text-error' : 'text-primary',
+      icon: risk === 'High risk' || risk === 'Unacceptable risk' ? 'warning' : 'verified',
+      colorClass: risk === 'High risk' || risk === 'Unacceptable risk' ? 'text-error' : 'text-primary',
       target: 'reports'
     });
   }

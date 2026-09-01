@@ -636,49 +636,38 @@ function scoreControls(payload = {}, fields = []) {
 }
 
 function computeOverallScore(result) {
-  const metricScores = {
-    bias: result.bias_score,
-    datasetQuality: result.dataset_quality_score,
-    modelArchitecture: result.model_architecture_score,
-    privacy: result.privacy_score,
-    compliance: result.compliance_score,
-    transparency: result.transparency_score,
-    environmentalImpact: result.environmental_impact_score,
-    accountability: result.accountability_score,
-    performance: result.performance_score,
-    robustness: result.robustness_score
-  };
-  const weightedScore =
-    (metricScores.bias * 0.15)
-    + (metricScores.datasetQuality * 0.12)
-    + (metricScores.modelArchitecture * 0.10)
-    + (metricScores.privacy * 0.12)
-    + (metricScores.compliance * 0.12)
-    + (metricScores.transparency * 0.10)
-    + (metricScores.environmentalImpact * 0.07)
-    + (metricScores.accountability * 0.10)
-    + (metricScores.performance * 0.07)
-    + (metricScores.robustness * 0.05);
-  const weakestMetric = Math.min(...Object.values(metricScores));
-  let penaltyAwareScore = (weightedScore * 0.70) + (weakestMetric * 0.30);
+  const metricScores = [
+    result.bias_score,
+    result.dataset_quality_score,
+    result.model_architecture_score,
+    result.privacy_score,
+    result.compliance_score,
+    result.transparency_score,
+    result.environmental_impact_score,
+    result.accountability_score,
+    result.performance_score,
+    result.robustness_score
+  ].filter((value) => typeof value === 'number' && Number.isFinite(value));
 
-  if (weakestMetric < 25) {
-    penaltyAwareScore = Math.min(penaltyAwareScore, 49);
-  } else if (Math.min(metricScores.bias, metricScores.privacy, metricScores.compliance) < 40) {
-    penaltyAwareScore = Math.min(penaltyAwareScore, 59);
+  if (!metricScores.length) {
+    return 0;
   }
 
-  return Math.round(Math.max(0, Math.min(100, penaltyAwareScore)) * 100) / 100;
+  const simpleAverage = metricScores.reduce((total, value) => total + value, 0) / metricScores.length;
+  return Math.round(Math.max(0, Math.min(100, simpleAverage)) * 100) / 100;
 }
 
 function classifyRisk(score) {
-  if (score >= 80) {
-    return 'Low';
+  if (score < 25) {
+    return 'Unacceptable risk';
   }
-  if (score >= 60) {
-    return 'Medium';
+  if (score < 50) {
+    return 'High risk';
   }
-  return 'High';
+  if (score < 75) {
+    return 'Limited risk';
+  }
+  return 'Low risk';
 }
 
 function preferComputedMetric(responseValue, computedValue) {

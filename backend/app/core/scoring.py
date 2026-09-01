@@ -4,9 +4,10 @@ from enum import Enum
 
 
 class RiskLevel(str, Enum):
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
+    UNACCEPTABLE = "Unacceptable risk"
+    HIGH = "High risk"
+    LIMITED = "Limited risk"
+    LOW = "Low risk"
 
 
 def clamp_score(score: float) -> float:
@@ -14,11 +15,13 @@ def clamp_score(score: float) -> float:
 
 
 def classify_risk(score: float) -> RiskLevel:
-    if score >= 80:
-        return RiskLevel.LOW
-    if score >= 60:
-        return RiskLevel.MEDIUM
-    return RiskLevel.HIGH
+    if score < 25:
+        return RiskLevel.UNACCEPTABLE
+    if score < 50:
+        return RiskLevel.HIGH
+    if score < 75:
+        return RiskLevel.LIMITED
+    return RiskLevel.LOW
 
 
 def score_boolean_controls(controls: dict[str, bool]) -> tuple[float, list[str]]:

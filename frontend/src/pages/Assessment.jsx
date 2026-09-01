@@ -75,7 +75,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
   });
 
   const [trustScore, setTrustScore] = useState(72);
-  const [riskLevel, setRiskLevel] = useState('Medium');
+  const [riskLevel, setRiskLevel] = useState('Limited risk');
   const [assessmentResult, setAssessmentResult] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [progress, setProgress] = useState(15);
@@ -445,15 +445,17 @@ export default function Assessment({ onAssessmentEvaluated }) {
               {/* Risk Level Badge */}
               <div
                 className={`px-md py-sm rounded-full flex items-center gap-sm font-semibold transition-all ${
-                  riskLevel === 'Low'
+                  riskLevel === 'Low risk'
                     ? 'bg-green-100 text-green-800'
-                    : riskLevel === 'Medium'
+                    : riskLevel === 'Limited risk'
                     ? 'bg-yellow-100 text-yellow-800'
+                    : riskLevel === 'High risk'
+                    ? 'bg-orange-100 text-orange-800'
                     : 'bg-red-100 text-red-800'
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">
-                  {riskLevel === 'Low' ? 'check_circle' : 'warning'}
+                  {riskLevel === 'Low risk' ? 'check_circle' : 'warning'}
                 </span>
                 <span className="font-label-md font-bold">Risk Level: {riskLevel}</span>
               </div>

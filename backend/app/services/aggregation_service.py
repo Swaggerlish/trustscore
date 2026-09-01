@@ -14,20 +14,6 @@ from app.schemas.robustness import RobustnessEvaluationResponse
 from app.schemas.transparency import TransparencyEvaluationResponse
 
 
-BIAS_WEIGHT = 0.15
-DATASET_QUALITY_WEIGHT = 0.12
-MODEL_ARCHITECTURE_WEIGHT = 0.10
-PRIVACY_WEIGHT = 0.12
-COMPLIANCE_WEIGHT = 0.12
-TRANSPARENCY_WEIGHT = 0.10
-ENVIRONMENTAL_IMPACT_WEIGHT = 0.07
-ACCOUNTABILITY_WEIGHT = 0.10
-PERFORMANCE_WEIGHT = 0.07
-ROBUSTNESS_WEIGHT = 0.05
-WEIGHTED_AVERAGE_FACTOR = 0.70
-WEAKEST_METRIC_FACTOR = 0.30
-CRITICAL_METRIC_CAP = 59.0
-SEVERE_METRIC_CAP = 49.0
 
 
 def aggregate_assessment(
@@ -92,30 +78,5 @@ def aggregate_assessment(
 
 
 def compute_overall_score(metric_scores: dict[str, float]) -> float:
-    weighted_score = (
-        (metric_scores["bias"] * BIAS_WEIGHT)
-        + (metric_scores["dataset_quality"] * DATASET_QUALITY_WEIGHT)
-        + (metric_scores["model_architecture"] * MODEL_ARCHITECTURE_WEIGHT)
-        + (metric_scores["privacy"] * PRIVACY_WEIGHT)
-        + (metric_scores["compliance"] * COMPLIANCE_WEIGHT)
-        + (metric_scores["transparency"] * TRANSPARENCY_WEIGHT)
-        + (metric_scores["environmental_impact"] * ENVIRONMENTAL_IMPACT_WEIGHT)
-        + (metric_scores["accountability"] * ACCOUNTABILITY_WEIGHT)
-        + (metric_scores["performance"] * PERFORMANCE_WEIGHT)
-        + (metric_scores["robustness"] * ROBUSTNESS_WEIGHT)
-    )
-    weakest_metric = min(metric_scores.values())
-    penalty_aware_score = (
-        weighted_score * WEIGHTED_AVERAGE_FACTOR
-    ) + (weakest_metric * WEAKEST_METRIC_FACTOR)
-
-    if weakest_metric < 25:
-        penalty_aware_score = min(penalty_aware_score, SEVERE_METRIC_CAP)
-    elif min(
-        metric_scores["bias"],
-        metric_scores["privacy"],
-        metric_scores["compliance"],
-    ) < 40:
-        penalty_aware_score = min(penalty_aware_score, CRITICAL_METRIC_CAP)
-
-    return clamp_score(penalty_aware_score)
+    values = list(metric_scores.values())
+    return clamp_score(sum(values) / len(values))

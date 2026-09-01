@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 
 const THRESHOLDS = [
-  { id: 'low', label: 'Low Risk Minimum', valueLabel: '80+', min: 70, max: 95 },
-  { id: 'medium', label: 'Medium Risk Minimum', valueLabel: '60+', min: 40, max: 79 },
-  { id: 'high', label: 'High Risk Ceiling', valueLabel: '<60', min: 20, max: 65 }
+  { id: 'unacceptable', label: 'Unacceptable Risk Ceiling', valueLabel: '0-25', min: 0, max: 30 },
+  { id: 'high', label: 'High Risk Ceiling', valueLabel: '25-50', min: 20, max: 60 },
+  { id: 'limited', label: 'Limited Risk Ceiling', valueLabel: '50-75', min: 40, max: 80 },
+  { id: 'low', label: 'Low Risk Minimum', valueLabel: '75-100', min: 65, max: 100 }
 ];
 
 const NOTIFICATION_OPTIONS = [
@@ -20,9 +21,10 @@ const PERMISSION_ROWS = [
 
 export default function Settings({ savedAssessmentCount = 0 }) {
   const [thresholds, setThresholds] = useState({
-    low: 80,
-    medium: 60,
-    high: 59
+    unacceptable: 25,
+    high: 50,
+    limited: 75,
+    low: 75
   });
   const [euAiActOverlays, setEuAiActOverlays] = useState(true);
   const [notifications, setNotifications] = useState({

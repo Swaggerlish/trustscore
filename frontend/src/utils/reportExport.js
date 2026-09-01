@@ -18,7 +18,7 @@ export function buildReportFromAssessment(formState, result, fallback = {}) {
     name: formState?.documentation?.systemName || fallback.name || 'Unnamed AI Vendor',
     category: formState?.risk?.aiActTier || fallback.category || 'AI Procurement Assessment',
     score,
-    riskLevel: result?.risk_level || fallback.riskLevel || 'Medium',
+    riskLevel: result?.risk_level || fallback.riskLevel || 'Limited risk',
     date: fallback.date || new Date().toLocaleDateString(),
     status: fallback.status || 'Completed',
     scores: {
@@ -105,8 +105,8 @@ function createVisualPdf(report) {
 
 function createOverviewPage(report) {
   const score = clampScore(report.score);
-  const risk = String(report.riskLevel || 'Medium');
-  const riskColor = risk.toLowerCase() === 'low' ? [0.04, 0.55, 0.34] : risk.toLowerCase() === 'high' ? [0.76, 0.12, 0.16] : [0.9, 0.55, 0.06];
+  const risk = String(report.riskLevel || 'Limited risk');
+  const riskColor = risk.toLowerCase().includes('low risk') ? [0.04, 0.55, 0.34] : risk.toLowerCase().includes('high risk') ? [0.97, 0.6, 0.2] : risk.toLowerCase().includes('unacceptable') ? [0.76, 0.12, 0.16] : [0.9, 0.55, 0.06];
   const commands = [
     fill(0.97, 0.98, 0.99), rect(0, 0, 612, 792, 'f'),
     fill(0.02, 0.12, 0.27), rect(0, 650, 612, 142, 'f'),
@@ -155,6 +155,8 @@ function createDetailPages(report) {
     ? report.recommendations
     : ['No open recommendations recorded. Continue routine monitoring and evidence review.'];
   const recommendationGroups = chunk(recommendations, 5);
+  const usedMetrics = new Set();
+
   return recommendationGroups.map((group, pageIndex) => {
     const commands = [
       fill(0.97, 0.98, 0.99), rect(0, 0, 612, 792, 'f'),
@@ -163,14 +165,13 @@ function createDetailPages(report) {
       text('Evidence & Recommendations', 40, 729, 19, true, [1, 1, 1]),
       text('ASSESSMENT EVIDENCE', 40, 676, 10, true, [0.08, 0.12, 0.19])
     ];
-    const evidence = getEvidenceForRecommendations(report, group, pageIndex);
-    if (evidence.length) {
-      evidence.forEach(([label, value], index) => {
-        const x = 40 + ((index % 2) * 273);
-        const y = 611 - (Math.floor(index / 2) * 77);
-        commands.push(card(x, y, 259, 62), text(titleCase(label).toUpperCase(), x + 14, y + 39, 7, true, [0.38, 0.44, 0.53]), text(safeMetricValue(value), x + 14, y + 18, 10, true, [0.08, 0.12, 0.19]));
-      });
-    } else {
+    const evidence = getEvidenceForRecommendations(report, group, pageIndex, usedMetrics);
+    evidence.forEach(([label, value], index) => {
+      const x = 40 + ((index % 2) * 273);
+      const y = 611 - (Math.floor(index / 2) * 77);
+      commands.push(card(x, y, 259, 62), text(titleCase(label).toUpperCase(), x + 14, y + 39, 7, true, [0.38, 0.44, 0.53]), text(safeMetricValue(value), x + 14, y + 18, 10, true, [0.08, 0.12, 0.19]));
+    });
+    if (!evidence.length) {
       commands.push(card(40, 602, 532, 60), text('Detailed evidence metrics were not supplied for this assessment.', 55, 628, 10, false, [0.38, 0.44, 0.53]));
     }
     commands.push(text('RECOMMENDED ACTIONS', 40, 485, 10, true, [0.08, 0.12, 0.19]));
@@ -187,7 +188,7 @@ function createDetailPages(report) {
   });
 }
 
-function getEvidenceForRecommendations(report, recommendations, pageIndex) {
+function getEvidenceForRecommendations(report, recommendations, pageIndex, usedMetrics = new Set()) {
   const evidenceCatalog = [
     { key: 'bias', label: 'Bias & Fairness Score', value: report.scores?.bias, terms: ['fairness', 'bias', 'demographic', 'disparate', 'subgroup', 'protected', 'equal opportunity', 'aif360'] },
     { key: 'demographicParityDifference', label: 'Demographic Parity Difference', value: report.metrics?.demographicParityDifference, terms: ['demographic parity', 'statistical parity', 'fairness'] },
@@ -207,16 +208,24 @@ function getEvidenceForRecommendations(report, recommendations, pageIndex) {
   ];
   const pageText = recommendations.join(' ').toLowerCase();
   const matchingEvidence = evidenceCatalog.filter((metric) => (
-    metric.value !== undefined
+    !usedMetrics.has(metric.key)
+      && metric.value !== undefined
       && metric.value !== null
       && metric.terms.some((term) => pageText.includes(term))
   ));
-  const availableEvidence = evidenceCatalog.filter((metric) => metric.value !== undefined && metric.value !== null);
+  const availableEvidence = evidenceCatalog.filter((metric) => (
+    !usedMetrics.has(metric.key)
+      && metric.value !== undefined
+      && metric.value !== null
+  ));
   const fallbackEvidence = availableEvidence.filter((metric) => !matchingEvidence.includes(metric));
   const remainingSlots = Math.max(0, 4 - matchingEvidence.length);
   const evidence = [...matchingEvidence, ...fallbackEvidence.slice(pageIndex * 2, pageIndex * 2 + remainingSlots)];
+  const uniqueEvidence = evidence.slice(0, 4).filter(({ key }) => !usedMetrics.has(key));
 
-  return evidence.slice(0, 4).map(({ label, value }) => [label, value]);
+  uniqueEvidence.forEach((metric) => usedMetrics.add(metric.key));
+
+  return uniqueEvidence.map(({ label, value }) => [label, value]);
 }
 
 function metricCard(commands, x, y, width, height, label, value) {

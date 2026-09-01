@@ -180,15 +180,17 @@ function ScoreCard({ label, value, prominent = false }) {
 }
 
 function RiskBadge({ riskLevel, compact = false }) {
-  const className = riskLevel === 'Low'
+  const className = riskLevel === 'Low risk'
     ? 'bg-green-100 text-green-800'
-    : riskLevel === 'Medium'
+    : riskLevel === 'Limited risk'
     ? 'bg-yellow-100 text-yellow-800'
+    : riskLevel === 'High risk'
+    ? 'bg-orange-100 text-orange-800'
     : 'bg-red-100 text-red-800';
 
   return (
     <span className={`inline-flex items-center rounded-full font-bold ${className} ${compact ? 'px-sm py-xs text-label-md' : 'px-md py-sm text-body-md'}`}>
-      {riskLevel} Risk
+      {riskLevel}
     </span>
   );
 }
@@ -199,7 +201,7 @@ function normalizeReport(assessment) {
     name: assessment.name || 'Unnamed AI Vendor',
     category: assessment.category || 'AI Procurement Assessment',
     score: assessment.score || 0,
-    riskLevel: assessment.riskLevel || 'Medium',
+    riskLevel: assessment.riskLevel || 'Limited risk',
     date: assessment.date || new Date().toLocaleDateString(),
     status: assessment.status || 'Completed',
     scores: assessment.scores || {},

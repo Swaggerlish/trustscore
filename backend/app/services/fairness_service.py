@@ -240,8 +240,10 @@ def _classify_fairness_risk(
     if disparate_impact >= 0.8 and abs(statistical_parity_difference) <= 0.1:
         return RiskLevel.LOW
     if disparate_impact >= 0.6:
-        return RiskLevel.MEDIUM
-    return RiskLevel.HIGH
+        return RiskLevel.LIMITED
+    if disparate_impact >= 0.4:
+        return RiskLevel.HIGH
+    return RiskLevel.UNACCEPTABLE
 
 
 def _recommendations(
