@@ -71,7 +71,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
     accountability: { details: '', affirmed: false, evidenceName: '' },
     performance: { details: '', affirmed: false, evidenceName: '' },
     robustness: { details: '', affirmed: false, evidenceName: '' },
-    review: { details: '', affirmed: false, evidenceName: '' }
+    review: { details: '', affirmed: false, evidenceName: '', knownLimitation: '' }
   });
 
   const [trustScore, setTrustScore] = useState(72);
@@ -183,6 +183,17 @@ export default function Assessment({ onAssessmentEvaluated }) {
   // Handle Assessment submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formState.review?.affirmed) {
+      setActiveTab('review');
+      setSubmitMessage({
+        type: 'error',
+        text: 'Please tick the Verified System Documentation box in Final Review before submitting the assessment.'
+      });
+      window.requestAnimationFrame(() => document.getElementById('verified-system-documentation')?.focus());
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitMessage(null);
 
@@ -295,11 +306,14 @@ export default function Assessment({ onAssessmentEvaluated }) {
           className={`p-md rounded-lg flex items-start gap-md ${
             submitMessage.type === 'success'
               ? 'bg-green-50 border border-green-200 text-green-800'
+              : submitMessage.type === 'error'
+              ? 'bg-red-50 border border-red-200 text-red-800'
               : 'bg-blue-50 border border-blue-200 text-blue-800'
           }`}
+          role={submitMessage.type === 'error' ? 'alert' : undefined}
         >
           <span className="material-symbols-outlined">
-            {submitMessage.type === 'success' ? 'check_circle' : 'info'}
+            {submitMessage.type === 'success' ? 'check_circle' : submitMessage.type === 'error' ? 'error' : 'info'}
           </span>
           <p className="font-body-md font-medium">{submitMessage.text}</p>
         </div>

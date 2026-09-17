@@ -15,6 +15,10 @@ export default function DocumentationForm({ data = {}, onChange }) {
   return (
     <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg lg:p-xl shadow-sm transition-all">
       <div className="mb-xl">
+        <div className="mb-md rounded-lg border border-outline-variant bg-surface-container p-md text-label-md text-on-surface-variant">
+          <span className="font-bold text-on-surface">Developer disclaimer: </span>
+          Please make sure all information provided is true and factual to the best of your knowledge.
+        </div>
         <h2 className="font-headline-md text-headline-md mb-xs text-on-surface">
           Documentation &amp; Purpose
         </h2>
