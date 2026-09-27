@@ -252,25 +252,6 @@ export default function GenericSectionForm({ sectionId, sectionTitle, sectionDes
           </div>
         </div>
 
-        {sectionId === 'review' && (
-          <div className="space-y-sm">
-            <label
-              htmlFor="known-model-limitation"
-              className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider"
-            >
-              Known limitation of the AI model
-            </label>
-            <textarea
-              id="known-model-limitation"
-              className="w-full p-md bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-on-surface text-body-md"
-              placeholder="Describe any known limitation, boundary, or condition where the AI model may not perform reliably..."
-              rows={4}
-              value={data.knownLimitation || ''}
-              onChange={(e) => onChange('knownLimitation', e.target.value)}
-            />
-          </div>
-        )}
-
         {/* Supporting Docs */}
         <button
           type="button"

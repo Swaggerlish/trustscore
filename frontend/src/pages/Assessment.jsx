@@ -30,10 +30,11 @@ export default function Assessment({ onAssessmentEvaluated }) {
       systemName: 'CognitiveFlow v2.1',
       intendedUse: '',
       deploymentEnv: 'Cloud-based (Public)',
-      whitepaperName: ''
+      whitepaperName: '',
+      knownLimitation: ''
     },
     risk: {
-      aiActTier: 'Limited Risk',
+      riskFrameworks: ['EU AI Act'],
       liabilityCoverage: '',
       gdprCompliant: false,
       optOutOptions: false,
@@ -71,7 +72,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
     accountability: { details: '', affirmed: false, evidenceName: '' },
     performance: { details: '', affirmed: false, evidenceName: '' },
     robustness: { details: '', affirmed: false, evidenceName: '' },
-    review: { details: '', affirmed: false, evidenceName: '', knownLimitation: '' }
+    review: { details: '', affirmed: false, evidenceName: '' }
   });
 
   const [trustScore, setTrustScore] = useState(72);
@@ -682,7 +683,7 @@ function buildDashboardAssessment(formState, result, id) {
   return {
     id,
     name: formState.documentation?.systemName || 'Unnamed AI Vendor',
-    category: formState.risk?.aiActTier || 'AI Procurement Assessment',
+    category: formState.risk?.riskFrameworks?.join(', ') || 'AI Procurement Assessment',
     status: 'Completed',
     riskLevel: result.risk_level,
     score,

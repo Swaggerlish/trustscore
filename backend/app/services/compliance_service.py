@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.core.scoring import classify_risk, score_boolean_controls
+from app.core.scoring import classify_risk
 from app.schemas.compliance import ComplianceEvaluationRequest, ComplianceEvaluationResponse
 
 
@@ -12,14 +12,16 @@ REQUIREMENT_LABELS = {
 
 
 def evaluate_compliance(payload: ComplianceEvaluationRequest) -> ComplianceEvaluationResponse:
-    requirements = {
-        label: getattr(payload, field_name)
+    selected_frameworks = payload.risk_frameworks or [
+        label
         for field_name, label in REQUIREMENT_LABELS.items()
-    }
-    compliance_score, failed_requirements = score_boolean_controls(requirements)
-    recommendations = [
-        f"Close documented gaps for {requirement} before procurement approval."
-        for requirement in failed_requirements
+        if getattr(payload, field_name)
+    ]
+    has_framework = bool(selected_frameworks)
+    compliance_score = 100.0 if has_framework else 0.0
+    failed_requirements = [] if has_framework else ["Risk management framework"]
+    recommendations = [] if has_framework else [
+        "Select at least one risk management framework before procurement approval."
     ]
 
     return ComplianceEvaluationResponse(

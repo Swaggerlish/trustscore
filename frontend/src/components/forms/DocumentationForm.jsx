@@ -15,9 +15,33 @@ export default function DocumentationForm({ data = {}, onChange }) {
   return (
     <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg lg:p-xl shadow-sm transition-all">
       <div className="mb-xl">
-        <div className="mb-md rounded-lg border border-outline-variant bg-surface-container p-md text-label-md text-on-surface-variant">
-          <span className="font-bold text-on-surface">Developer disclaimer: </span>
-          Please make sure all information provided is true and factual to the best of your knowledge.
+        <label className="mb-md flex cursor-pointer items-start gap-sm rounded-lg border border-outline-variant bg-surface-container p-md text-label-md text-on-surface-variant">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+            checked={Boolean(data.developerDisclaimerAcknowledged)}
+            onChange={(event) => onChange('developerDisclaimerAcknowledged', event.target.checked)}
+          />
+          <span>
+            <span className="font-bold text-on-surface">Developer disclaimer: </span>
+            Please make sure all information provided is true and factual to the best of your knowledge.
+          </span>
+        </label>
+        <div className="mb-lg space-y-sm">
+          <label
+            htmlFor="known-model-limitation"
+            className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider"
+          >
+            Known limitation of the AI model
+          </label>
+          <textarea
+            id="known-model-limitation"
+            className="w-full p-md bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-on-surface text-body-md"
+            placeholder="Describe any known limitation, boundary, or condition where the AI model may not perform reliably..."
+            rows={4}
+            value={data.knownLimitation || ''}
+            onChange={(e) => onChange('knownLimitation', e.target.value)}
+          />
         </div>
         <h2 className="font-headline-md text-headline-md mb-xs text-on-surface">
           Documentation &amp; Purpose

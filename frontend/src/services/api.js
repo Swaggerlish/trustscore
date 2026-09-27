@@ -5,7 +5,7 @@ export function buildAssessmentPayload(formState) {
   const hasBiasEvidence = Boolean(
     biasData.affirmed || biasData.details?.trim() || biasData.evidenceName
   );
-  const aiActTier = formState.risk?.aiActTier || '';
+  const riskFrameworks = formState.risk?.riskFrameworks || [];
   const datasetQualityPayload = buildDatasetQualityPayload(formState);
   const modelArchitecturePayload = buildModelArchitecturePayload(formState);
   const privacyPayload = buildPrivacyPayload(formState);
@@ -32,9 +32,10 @@ export function buildAssessmentPayload(formState) {
       ...privacyPayload
     },
     compliance: {
-      gdpr: Boolean(formState.risk?.gdprCompliant),
-      eu_ai_act: Boolean(aiActTier && !aiActTier.includes('Unacceptable')),
-      hipaa: false
+      risk_frameworks: riskFrameworks,
+      gdpr: riskFrameworks.includes('GDPR'),
+      eu_ai_act: riskFrameworks.includes('EU AI Act'),
+      hipaa: riskFrameworks.includes('HIPAA')
     },
     transparency: {
       ...transparencyPayload

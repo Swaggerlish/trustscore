@@ -1,5 +1,16 @@
 import React, { useRef, useState } from 'react';
 
+const frameworkOptions = [
+  'GDPR',
+  'CCPA',
+  'HIPAA',
+  'EU AI Act',
+  'NIST AI RMF',
+  'ISO/IEC 42001',
+  'ISO/IEC 23894',
+  'OECD AI Principles'
+];
+
 export default function RiskForm({ data = {}, onChange }) {
   const [activeField, setActiveField] = useState(null);
   const fileInputRef = useRef(null);
@@ -47,38 +58,54 @@ export default function RiskForm({ data = {}, onChange }) {
           </div>
         </div>
 
-        {/* EU AI Act Risk Tier */}
+        {/* Risk Management Frameworks */}
         <div
           className="space-y-sm transition-transform duration-200"
-          style={{ transform: activeField === 'aiActTier' ? 'translateX(4px)' : 'none' }}
+          style={{ transform: activeField === 'riskFrameworks' ? 'translateX(4px)' : 'none' }}
         >
           <div className="flex items-center gap-xs">
-            <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-              EU AI Act Classification
+            <label
+              htmlFor="risk-management-frameworks"
+              className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider"
+            >
+              Which risk management frameworks is this assessed on?
             </label>
             <span
               className="material-symbols-outlined text-outline text-[16px] cursor-help"
-              title="Select the regulatory compliance tier based on the EU Artificial Intelligence Act framework."
+              title="Select the applicable risk management framework assessment."
             >
               info
             </span>
           </div>
-          <div className="relative">
-            <select
-              className="w-full p-md bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer text-on-surface text-body-md"
-              value={data.aiActTier || 'Limited Risk'}
-              onFocus={() => handleFocus('aiActTier')}
-              onBlur={handleBlur}
-              onChange={(e) => onChange('aiActTier', e.target.value)}
-            >
-              <option>Minimal / No Risk (e.g. spam filters)</option>
-              <option>Limited Risk (e.g. chatbots, generative models)</option>
-              <option>High Risk (e.g. recruiting, credit scoring, biometrics)</option>
-              <option>Unacceptable / Prohibited (e.g. social scoring)</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-outline pointer-events-none">
-              expand_more
-            </span>
+          <div
+            className="grid gap-sm rounded-lg border border-outline-variant bg-surface p-md sm:grid-cols-2"
+            onFocus={() => handleFocus('riskFrameworks')}
+            onBlur={handleBlur}
+          >
+            {frameworkOptions.map((framework) => {
+              const isSelected = (data.riskFrameworks || []).includes(framework);
+              return (
+                <label
+                  key={framework}
+                  className="flex cursor-pointer items-center gap-sm rounded-md p-sm text-body-md text-on-surface transition-colors hover:bg-surface-container"
+                >
+                  <input
+                    type="checkbox"
+                    value={framework}
+                    checked={isSelected}
+                    className="h-4 w-4 shrink-0 accent-primary"
+                    onChange={(event) => {
+                      const selectedFrameworks = data.riskFrameworks || [];
+                      const nextFrameworks = event.target.checked
+                        ? [...selectedFrameworks, framework]
+                        : selectedFrameworks.filter((selected) => selected !== framework);
+                      onChange('riskFrameworks', nextFrameworks);
+                    }}
+                  />
+                  <span>{framework}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 
@@ -101,25 +128,12 @@ export default function RiskForm({ data = {}, onChange }) {
           />
         </div>
 
-        {/* GDPR Compliance & Data Controls */}
+        {/* Data Rights Controls */}
         <div className="space-y-md">
           <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
             Privacy &amp; Data Rights Checkpoints
           </label>
           <div className="space-y-sm">
-            <label className="flex items-center gap-md p-md bg-surface border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
-              <input
-                type="checkbox"
-                className="w-5 h-5 rounded text-primary border-outline-variant focus:ring-primary cursor-pointer"
-                checked={data.gdprCompliant || false}
-                onChange={(e) => onChange('gdprCompliant', e.target.checked)}
-              />
-              <div>
-                <p className="font-body-md font-bold text-on-surface">GDPR &amp; CCPA Compliant</p>
-                <p className="text-label-md text-on-surface-variant">System supports "Right to be Forgotten" and data exports.</p>
-              </div>
-            </label>
-
             <label className="flex items-center gap-md p-md bg-surface border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
               <input
                 type="checkbox"
@@ -151,7 +165,7 @@ export default function RiskForm({ data = {}, onChange }) {
           <span className="material-symbols-outlined text-outline group-hover:text-primary text-[32px] mb-sm">
             verified
           </span>
-          <p className="font-body-md font-bold mb-xs text-on-surface">Upload Third-party Compliance Audit</p>
+          <p className="font-body-md font-bold mb-xs text-on-surface">Upload the third-party risk assessment audit</p>
           <p className="text-label-md text-on-surface-variant">SOC 2 Type II, ISO 27001, or legal audits</p>
           {data.auditName && (
             <div className="mt-md max-w-full px-md py-xs bg-primary-container/20 text-primary rounded-full text-label-md flex items-center gap-sm">

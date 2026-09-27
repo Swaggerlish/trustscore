@@ -16,7 +16,7 @@ export function buildReportFromAssessment(formState, result, fallback = {}) {
   return {
     id: fallback.id,
     name: formState?.documentation?.systemName || fallback.name || 'Unnamed AI Vendor',
-    category: formState?.risk?.aiActTier || fallback.category || 'AI Procurement Assessment',
+    category: formState?.risk?.riskFrameworks?.join(', ') || fallback.category || 'AI Procurement Assessment',
     score,
     riskLevel: result?.risk_level || fallback.riskLevel || 'Limited risk',
     date: fallback.date || new Date().toLocaleDateString(),

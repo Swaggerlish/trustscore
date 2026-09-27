@@ -6,6 +6,7 @@ from app.core.scoring import RiskLevel
 
 
 class ComplianceEvaluationRequest(BaseModel):
+    risk_frameworks: list[str] = Field(default_factory=list)
     gdpr: bool = False
     eu_ai_act: bool = False
     hipaa: bool = False
