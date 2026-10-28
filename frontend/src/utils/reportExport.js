@@ -41,6 +41,7 @@ export function buildReportFromAssessment(formState, result, fallback = {}) {
       datasetQualityEvaluationMethod: result?.dataset_quality_evaluation_method,
       dataQualityMetrics: result?.data_quality_metrics
     },
+    documentVerifications: fallback.documentVerifications || {},
     recommendations: result?.recommendations || fallback.recommendations || []
   };
 }
@@ -62,7 +63,11 @@ function downloadPdfReport(report) {
 }
 
 function createVisualPdf(report) {
-  const pages = [createOverviewPage(report), ...createDetailPages(report)];
+  const pages = [
+    createOverviewPage(report),
+    ...createVerificationPages(report),
+    ...createDetailPages(report)
+  ];
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     null,
@@ -101,6 +106,101 @@ function createVisualPdf(report) {
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
 
   return pdf;
+}
+
+function createVerificationPages(report) {
+  const rows = getVerificationRows(report);
+  if (!rows.length) {
+    return [];
+  }
+
+  return chunk(rows, 5).map((group, pageIndex) => {
+    const commands = [
+      fill(0.97, 0.98, 0.99), rect(0, 0, 612, 792, 'f'),
+      fill(0.02, 0.12, 0.27), rect(0, 712, 612, 80, 'f'),
+      text('PROCURESCORE', 40, 755, 10, true, [0.45, 0.72, 1]),
+      text('LLM Evidence Verification', 40, 729, 19, true, [1, 1, 1]),
+      text('CLAIM VERIFICATION TABLE', 40, 676, 10, true, [0.08, 0.12, 0.19])
+    ];
+    const columnLabels = ['Metric', 'SubMetric', 'What vendor claimed', 'LLM flag'];
+    const columnX = [40, 130, 215, 370];
+    const columnWidths = [90, 85, 155, 197];
+    const columnWrapWidths = [15, 15, 27, 34];
+    const headerY = 645;
+
+    columnLabels.forEach((label, index) => {
+      commands.push(fill(0.02, 0.12, 0.27), rect(columnX[index], headerY, columnWidths[index], 28, 'f'));
+      commands.push(text(label, columnX[index] + 6, headerY + 10, 7, true, [1, 1, 1]));
+    });
+
+    let rowTop = headerY;
+    group.forEach((row, rowIndex) => {
+      const cells = [row.metric, row.subMetric, row.vendorClaim, row.llmFlag];
+      const wrapped = cells.map((cell, index) => wrapLine(safeText(cell), columnWrapWidths[index]).slice(0, 5));
+      const rowHeight = Math.max(...wrapped.map((lines) => lines.length)) * 10 + 12;
+      const rowY = rowTop - rowHeight;
+      cells.forEach((_, index) => {
+        commands.push(
+          fill(rowIndex % 2 === 0 ? 1 : 0.95, rowIndex % 2 === 0 ? 1 : 0.97, rowIndex % 2 === 0 ? 1 : 0.99),
+          stroke(0.86, 0.89, 0.93),
+          rect(columnX[index], rowY, columnWidths[index], rowHeight, 'B')
+        );
+        wrapped[index].forEach((line, lineIndex) => {
+          commands.push(text(line, columnX[index] + 6, rowTop - 15 - (lineIndex * 10), 7, index === 3 && lineIndex === 0, index === 3 ? [0, 0.35, 0.75] : [0.12, 0.16, 0.22]));
+        });
+      });
+      rowTop = rowY;
+    });
+
+    const legendY = Math.max(70, rowTop - 34);
+    commands.push(
+      text('LLM flag interpretation', 40, legendY, 9, true, [0.08, 0.12, 0.19]),
+      text('Verified = direct supporting evidence found. Not verified = evidence was unclear or absent.', 40, legendY - 16, 8, false, [0.38, 0.44, 0.53]),
+      text('Partially verified = only part of the claim was supported. Contradicted = the document conflicts with the claim.', 40, legendY - 29, 8, false, [0.38, 0.44, 0.53]),
+      ...footer(pageIndex + 2)
+    );
+    return commands.join('\n');
+  });
+}
+
+function getVerificationRows(report) {
+  const rows = [];
+  Object.entries(report.documentVerifications || {}).forEach(([sectionId, verification]) => {
+    if (verification?.status !== 'complete' || !verification.result?.claims?.length) return;
+    const vendorClaims = verification.vendorClaims?.claims || {};
+    const sectionLabel = titleCase(sectionId);
+    verification.result.claims.forEach((claim) => {
+      const claimKey = Object.keys(vendorClaims).find((key) => (
+        key === claim.claim || claim.claim?.toLowerCase().includes(key.toLowerCase())
+      ));
+      const vendorValue = claimKey ? vendorClaims[claimKey] : claim.claim;
+      const flag = claim.verdict === 'supported'
+        ? 'Verified'
+        : claim.verdict === 'partially_supported'
+        ? 'Partially verified'
+        : claim.verdict === 'contradicted'
+        ? 'Contradicted'
+        : 'Not verified';
+      const explanation = claim.explanation || (
+        flag === 'Verified'
+          ? 'Direct supporting evidence found.'
+          : 'Supporting evidence was unclear or absent.'
+      );
+      rows.push({
+        metric: sectionLabel,
+        subMetric: claim.claim,
+        vendorClaim: formatVendorClaim(vendorValue),
+        llmFlag: `${flag}: ${explanation}`
+      });
+    });
+  });
+  return rows;
+}
+
+function formatVendorClaim(value) {
+  if (value === true) return 'Yes';
+  if (value === false) return 'No';
+  return safeMetricValue(value);
 }
 
 function createOverviewPage(report) {

@@ -120,7 +120,12 @@ export default function Assessment({ onAssessmentEvaluated }) {
       const result = await verifyUploadedDocument(file, sectionId, buildVendorClaims(sectionId, state));
       setDocumentVerifications((current) => ({
         ...current,
-        [sectionId]: { status: 'complete', filename: file.name, result }
+        [sectionId]: {
+          status: 'complete',
+          filename: file.name,
+          result,
+          vendorClaims: buildVendorClaims(sectionId, state)
+        }
       }));
       return result;
     } catch (error) {
@@ -237,7 +242,10 @@ export default function Assessment({ onAssessmentEvaluated }) {
     }
 
     downloadReport(
-      buildReportFromAssessment(formState, assessmentResult, { id: assessmentIdRef.current }),
+      buildReportFromAssessment(formState, assessmentResult, {
+        id: assessmentIdRef.current,
+        documentVerifications
+      }),
       downloadFormat
     );
   };
@@ -325,7 +333,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
           <div>
             <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">AI Document Verification</h2>
             <p className="text-body-md text-on-surface-variant">
-              Llama compares uploaded evidence with the vendor's narrative and selected claims. It does not replace human review.
+              Gemini 3.8 Flash compares uploaded evidence with the vendor's narrative and selected claims. It does not replace human review.
             </p>
           </div>
           {Object.entries(documentVerifications).map(([sectionId, verification]) => (

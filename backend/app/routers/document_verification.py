@@ -4,6 +4,7 @@ import asyncio
 import json
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from google.genai.errors import APIError
 
 from app.schemas.document_verification import DocumentVerificationResponse
 from app.services.document_verification_service import verify_document
@@ -36,5 +37,14 @@ async def verify_uploaded_document(
         raise HTTPException(status_code=422, detail="Vendor claims are not valid JSON.") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except APIError as exc:
+        upstream_status = exc.code if 400 <= exc.code < 600 else 502
+        if upstream_status == 429:
+            detail = "Gemini API rate limit reached. Please try again later or check the free-tier quota."
+        elif upstream_status in {401, 403}:
+            detail = "The Gemini API key is invalid or cannot access this model. Check GEMINI_API_KEY."
+        else:
+            detail = f"Gemini API request failed with status {upstream_status}."
+        raise HTTPException(status_code=upstream_status, detail=detail) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Document verification failed: {exc}") from exc
