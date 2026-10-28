@@ -41,6 +41,8 @@ async def verify_uploaded_document(
         upstream_status = exc.code if 400 <= exc.code < 600 else 502
         if upstream_status == 429:
             detail = "Gemini API rate limit reached. Please try again later or check the free-tier quota."
+        elif upstream_status == 503:
+            detail = "Gemini is temporarily unavailable due to capacity. Please retry in a few seconds."
         elif upstream_status in {401, 403}:
             detail = "The Gemini API key is invalid or cannot access this model. Check GEMINI_API_KEY."
         else:

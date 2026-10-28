@@ -4,12 +4,14 @@ import io
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
 from docx import Document
 from dotenv import load_dotenv
 from google import genai
+from google.genai.errors import APIError
 from google.genai import types
 from openpyxl import load_workbook
 from pypdf import PdfReader
@@ -18,6 +20,7 @@ from app.schemas.document_verification import DocumentVerificationResponse
 
 MODEL_ID = "gemini-3.8-flash"
 MAX_DOCUMENT_CHARS = 24_000
+MAX_GEMINI_ATTEMPTS = 3
 SYSTEM_PROMPT = """You are ProcureScore's AI Evidence Verification Engine.
 
 Your task is to verify whether vendor-provided documents support specific trustworthiness claims submitted during AI procurement assessment.
@@ -79,16 +82,23 @@ def verify_document(
 
     prompt = _build_prompt(section, vendor_claims, document_text[:MAX_DOCUMENT_CHARS])
     client = genai.Client(api_key=api_key)
-    completion = client.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.1,
-            max_output_tokens=4096,
-            response_mime_type="application/json",
-        ),
-    )
+    for attempt in range(MAX_GEMINI_ATTEMPTS):
+        try:
+            completion = client.models.generate_content(
+                model=MODEL_ID,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    temperature=0.1,
+                    max_output_tokens=4096,
+                    response_mime_type="application/json",
+                ),
+            )
+            break
+        except APIError as exc:
+            if exc.code not in {429, 503} or attempt == MAX_GEMINI_ATTEMPTS - 1:
+                raise
+            time.sleep(2**attempt)
     raw = completion.text or ""
     parsed = _normalize_verification_response(_parse_json_response(raw), vendor_claims)
     parsed.update({"section": section, "filename": filename, "model": MODEL_ID})
