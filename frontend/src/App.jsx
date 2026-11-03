@@ -5,11 +5,20 @@ import Assessment from './pages/Assessment';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import LandingPage from './pages/LandingPage';
+import { DEFAULT_ASSESSMENT_METRICS } from './utils/assessmentMetrics';
 
 export default function App() {
   const [pathname, setPathname] = useState(() => window.location.pathname);
   const [activePage, setActivePage] = useState('dashboard');
   const [selectedReportId, setSelectedReportId] = useState(null);
+  const [applicableMetrics, setApplicableMetrics] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('trustscore_applicable_metrics') || 'null');
+      return Array.isArray(saved) && saved.length ? saved : DEFAULT_ASSESSMENT_METRICS;
+    } catch {
+      return DEFAULT_ASSESSMENT_METRICS;
+    }
+  });
   const [assessmentHistory, setAssessmentHistory] = useState(() => {
     try {
       return JSON.parse(
@@ -26,6 +35,11 @@ export default function App() {
   const saveAssessmentHistory = (nextHistory) => {
     setAssessmentHistory(nextHistory);
     localStorage.setItem('procurescore_assessments', JSON.stringify(nextHistory));
+  };
+
+  const updateApplicableMetrics = (metrics) => {
+    setApplicableMetrics(metrics);
+    localStorage.setItem('trustscore_applicable_metrics', JSON.stringify(metrics));
   };
 
   React.useEffect(() => {
@@ -84,7 +98,10 @@ export default function App() {
         />
       )}
       {activePage === 'assessment' && (
-        <Assessment onAssessmentEvaluated={handleAssessmentEvaluated} />
+        <Assessment
+          applicableMetrics={applicableMetrics}
+          onAssessmentEvaluated={handleAssessmentEvaluated}
+        />
       )}
       {activePage === 'reports' && (
         <Reports
@@ -95,7 +112,11 @@ export default function App() {
         />
       )}
       {activePage === 'settings' && (
-        <Settings savedAssessmentCount={savedAssessmentCount} />
+        <Settings
+          applicableMetrics={applicableMetrics}
+          onApplicableMetricsChange={updateApplicableMetrics}
+          savedAssessmentCount={savedAssessmentCount}
+        />
       )}
     </Layout>
   );

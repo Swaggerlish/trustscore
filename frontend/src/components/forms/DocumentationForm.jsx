@@ -17,13 +17,15 @@ export default function DocumentationForm({ data = {}, onChange }) {
       <div className="mb-xl">
         <label className="mb-md flex cursor-pointer items-start gap-sm rounded-lg border border-outline-variant bg-surface-container p-md text-label-md text-on-surface-variant">
           <input
+            id="developer-disclaimer"
             type="checkbox"
+            required
             className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
             checked={Boolean(data.developerDisclaimerAcknowledged)}
             onChange={(event) => onChange('developerDisclaimerAcknowledged', event.target.checked)}
           />
           <span>
-            <span className="font-bold text-on-surface">Developer disclaimer: </span>
+            <span className="font-bold text-on-surface">Developer disclaimer <span className="text-error" aria-hidden="true">*</span>: </span>
             Please make sure all information provided is true and factual to the best of your knowledge.
           </span>
         </label>

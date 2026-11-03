@@ -5,6 +5,8 @@ export default function Reports({ assessmentHistory = [], onDeleteAssessment, on
   const [downloadFormat, setDownloadFormat] = useState('pdf');
   const reports = assessmentHistory.map(normalizeReport);
   const selectedReport = reports.find((report) => report.id === selectedReportId) || reports[0];
+  const isApplicable = (metricId) => !selectedReport?.applicableMetrics
+    || selectedReport.applicableMetrics.includes(metricId);
 
   const handleDownload = () => {
     if (!selectedReport) {
@@ -79,16 +81,16 @@ export default function Reports({ assessmentHistory = [], onDeleteAssessment, on
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-md mb-xl">
             <ScoreCard label="Overall Trust Score" value={selectedReport.score} prominent />
-            <ScoreCard label="Bias & Fairness" value={selectedReport.scores?.bias} />
-            <ScoreCard label="Dataset Quality" value={selectedReport.scores?.datasetQuality} />
-            <ScoreCard label="Model Architecture" value={selectedReport.scores?.modelArchitecture} />
-            <ScoreCard label="Privacy & Security" value={selectedReport.scores?.privacy} />
-            <ScoreCard label="Risk Assessment" value={selectedReport.scores?.compliance} />
-            <ScoreCard label="Transparency" value={selectedReport.scores?.transparency} />
-            <ScoreCard label="Environmental Impact" value={selectedReport.scores?.environmentalImpact} />
-            <ScoreCard label="Accountability" value={selectedReport.scores?.accountability} />
-            <ScoreCard label="Performance" value={selectedReport.scores?.performance} />
-            <ScoreCard label="Robustness" value={selectedReport.scores?.robustness} />
+            {isApplicable('risk') && <ScoreCard label="Risk Assessment" value={selectedReport.scores?.compliance} />}
+            {isApplicable('robustness') && <ScoreCard label="Robustness" value={selectedReport.scores?.robustness} />}
+            {isApplicable('privacy') && <ScoreCard label="Privacy & Security" value={selectedReport.scores?.privacy} />}
+            {isApplicable('bias') && <ScoreCard label="Bias & Fairness" value={selectedReport.scores?.bias} />}
+            {isApplicable('accountability') && <ScoreCard label="Accountability" value={selectedReport.scores?.accountability} />}
+            {isApplicable('models') && <ScoreCard label="Models & Architecture" value={selectedReport.scores?.modelArchitecture} />}
+            {isApplicable('performance') && <ScoreCard label="Performance" value={selectedReport.scores?.performance} />}
+            {isApplicable('transparency') && <ScoreCard label="Transparency" value={selectedReport.scores?.transparency} />}
+            {isApplicable('environmental') && <ScoreCard label="Environmental Impact" value={selectedReport.scores?.environmentalImpact} />}
+            {isApplicable('datasets') && <ScoreCard label="Dataset Quality" value={selectedReport.scores?.datasetQuality} />}
           </div>
 
           <div className="border-t border-outline-variant pt-lg">

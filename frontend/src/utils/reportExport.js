@@ -21,6 +21,7 @@ export function buildReportFromAssessment(formState, result, fallback = {}) {
     riskLevel: result?.risk_level || fallback.riskLevel || 'Limited risk',
     date: fallback.date || new Date().toLocaleDateString(),
     status: fallback.status || 'Completed',
+    applicableMetrics: formState?.applicableMetrics || fallback.applicableMetrics,
     scores: {
       bias: result?.bias_score,
       datasetQuality: result?.dataset_quality_score,
@@ -235,14 +236,21 @@ function createOverviewPage(report) {
     text('TRUSTWORTHINESS SCORECARD', 40, 494, 10, true, [0.08, 0.12, 0.19])
   ];
 
-  const scoreEntries = Object.entries(report.scores || {});
   const labels = {
-    bias: 'Bias & Fairness', datasetQuality: 'Dataset Quality', modelArchitecture: 'Model Architecture',
-    privacy: 'Privacy & Security', compliance: 'Risk Assessment', transparency: 'Transparency',
-    environmentalImpact: 'Environmental Impact', accountability: 'Accountability',
-    performance: 'Performance', robustness: 'Robustness'
+    compliance: 'Risk Assessment', privacy: 'Privacy & Security', bias: 'Bias & Fairness',
+    accountability: 'Accountability', modelArchitecture: 'Models & Architecture',
+    performance: 'Performance', transparency: 'Transparency',
+    environmentalImpact: 'Environmental Impact', datasetQuality: 'Dataset Quality',
+    robustness: 'Robustness'
   };
-  scoreEntries.slice(0, 10).forEach(([key, value], index) => {
+  const scoreOrder = [
+    'compliance', 'robustness', 'privacy', 'bias', 'accountability', 'modelArchitecture',
+    'performance', 'transparency', 'environmentalImpact', 'datasetQuality'
+  ];
+  scoreOrder
+    .map((key) => [key, report.scores?.[key]])
+    .filter(([, value]) => value !== undefined)
+    .forEach(([key, value], index) => {
     const col = index % 2;
     const row = Math.floor(index / 2);
     metricCard(commands, 40 + (col * 273), 421 - (row * 72), 259, 58, labels[key] || titleCase(key), value);

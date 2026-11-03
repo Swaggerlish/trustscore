@@ -1,16 +1,18 @@
 import React from 'react';
 
 const metrics = [
-  ['balance', 'Bias & Fairness', 'Identifies unequal outcomes and discriminatory patterns.', 'IBM AI Fairness 360 metrics, including Statistical Parity Difference and Disparate Impact.'],
-  ['dataset', 'Dataset Quality', 'Examines whether the data is reliable and fit for purpose.', 'Evidently AI checks for completeness, missing values, imbalance, and quality indicators.'],
-  ['shield_lock', 'Privacy & Security', 'Reviews how sensitive data and system access are protected.', 'Encryption, anonymization, access controls, and data-minimization evidence.'],
+  ['description', 'Documentation & Purpose', 'Captures the system purpose and intended use.', 'System context, deployment environment, documentation, and known limitations.'],
   ['gavel', 'Risk Assessment', 'Maps the system to relevant legal and regulatory obligations.', 'Alignment with GDPR, the EU AI Act, HIPAA, and other applicable requirements.'],
-  ['account_tree', 'Accountability', 'Confirms that responsibility and escalation paths are clear.', 'Ownership, auditability, human oversight, and incident-response readiness.'],
-  ['visibility', 'Transparency', 'Determines whether stakeholders can understand the system and its limits.', 'Documentation quality, model cards, explainability, and limitation disclosures.'],
-  ['architecture', 'Model Architecture', 'Reviews the technical foundation and deployment approach.', 'Architecture records, training methodology, deployment design, and explainability mechanisms.'],
   ['verified_user', 'Robustness', 'Tests whether the system remains dependable under pressure.', 'Failure resilience, adversarial testing, monitoring, and testing practices.'],
+  ['shield_lock', 'Privacy & Security', 'Reviews how sensitive data and system access are protected.', 'Encryption, anonymization, access controls, and data-minimization evidence.'],
+  ['balance', 'Bias & Fairness', 'Identifies unequal outcomes and discriminatory patterns.', 'IBM AI Fairness 360 metrics, including Statistical Parity Difference and Disparate Impact.'],
+  ['account_tree', 'Accountability', 'Confirms that responsibility and escalation paths are clear.', 'Ownership, auditability, human oversight, and incident-response readiness.'],
+  ['architecture', 'Models & Architecture', 'Reviews the technical foundation and deployment approach.', 'Architecture records, training methodology, deployment design, and explainability mechanisms.'],
   ['speed', 'Performance', 'Validates whether the model meets its stated objectives.', 'Benchmarks, accuracy, precision, recall, and independent validation.'],
-  ['eco', 'Environmental Impact', 'Examines the resource footprint across the AI lifecycle.', 'Energy tracking, carbon reporting, resource efficiency, and lifecycle optimization.']
+  ['visibility', 'Transparency', 'Determines whether stakeholders can understand the system and its limits.', 'Documentation quality, model cards, explainability, and limitation disclosures.'],
+  ['eco', 'Environmental Impact', 'Examines the resource footprint across the AI lifecycle.', 'Energy tracking, carbon reporting, resource efficiency, and lifecycle optimization.'],
+  ['dataset', 'Dataset Quality', 'Examines whether the data is reliable and fit for purpose.', 'Evidently AI checks for completeness, missing values, imbalance, and quality indicators.'],
+  ['check_circle', 'Final Review', 'Consolidates the assessment into a final trust review.', 'Verified evidence, overall trust score, risk classification, and recommendations.']
 ];
 
 const audiences = [

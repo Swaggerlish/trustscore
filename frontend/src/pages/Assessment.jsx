@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import DocumentationForm from '../components/forms/DocumentationForm';
 import RiskForm from '../components/forms/RiskForm';
 import GenericSectionForm from '../components/forms/GenericSectionForm';
@@ -6,23 +6,35 @@ import BiasFairnessForm from '../components/forms/BiasFairnessForm';
 import DatasetQualityForm from '../components/forms/DatasetQualityForm';
 import { submitAssessment, verifyUploadedDocument } from '../services/api';
 import { buildReportFromAssessment, downloadReport } from '../utils/reportExport';
+import { ASSESSMENT_METRICS } from '../utils/assessmentMetrics';
 
 const SECTIONS = [
   { id: 'documentation', num: 1, label: 'Documentation & Purpose', icon: 'description', desc: "Provide high-level context about the AI system's intended use and design philosophy." },
-  { id: 'datasets', num: 2, label: 'Datasets', icon: 'database', desc: "Evaluate training data sourcing, volume, licensing, and preprocessing procedures." },
-  { id: 'models', num: 3, label: 'Models & Architecture', icon: 'psychology', desc: "Review model selection, size, deep learning parameters, and architecture details." },
-  { id: 'privacy', num: 4, label: 'Privacy & Security', icon: 'security', desc: "Examine security frameworks, encryption keys, vulnerability patching, and access controls." },
-  { id: 'bias', num: 5, label: 'Bias & Fairness', icon: 'balance', desc: "Measure bias ratios and ensure demographic parity across age, gender, and ethnicity." },
-  { id: 'transparency', num: 6, label: 'Transparency', icon: 'visibility', desc: "Document explanation interfaces, decision logging, and model interpretability tools." },
-  { id: 'environmental', num: 7, label: 'Environmental Impact', icon: 'eco', desc: "Analyze electricity consumption and compute power usage during model training and deployment." },
-  { id: 'accountability', num: 8, label: 'Accountability', icon: 'group', desc: "Configure review boards, compliance tracking, and intervention protocols." },
-  { id: 'risk', num: 9, label: 'Risk Assessment', icon: 'policy', desc: "Assess regulatory compliance, intellectual property protection, and liability frameworks of the AI system." },
-  { id: 'performance', num: 10, label: 'Performance', icon: 'monitor_heart', desc: "Benchmark operations latency, throughput, validation curves, and test score stability." },
-  { id: 'robustness', num: 11, label: 'Robustness', icon: 'engineering', desc: "Identify failover limits, drift monitoring thresholds, and defense mechanisms." },
-  { id: 'review', num: 12, label: 'Final Review', icon: 'check_circle', desc: "Consolidate evaluation indicators and publish the AI system's finalized trust certificate." }
+  ...ASSESSMENT_METRICS.map((metric) => ({
+    ...metric,
+    desc: {
+      risk: "Assess regulatory compliance, intellectual property protection, and liability frameworks of the AI system.",
+      robustness: "Identify failover limits, drift monitoring thresholds, and defense mechanisms.",
+      privacy: "Examine security frameworks, encryption keys, vulnerability patching, and access controls.",
+      bias: "Measure bias ratios and ensure demographic parity across age, gender, and ethnicity.",
+      accountability: "Configure review boards, compliance tracking, and intervention protocols.",
+      models: "Review model selection, size, deep learning parameters, and architecture details.",
+      performance: "Benchmark operations latency, throughput, validation curves, and test score stability.",
+      transparency: "Document explanation interfaces, decision logging, and model interpretability tools.",
+      environmental: "Analyze electricity consumption and compute power usage during model training and deployment.",
+      datasets: "Evaluate training data sourcing, volume, licensing, and preprocessing procedures."
+    }[metric.id]
+  })),
+  { id: 'review', label: 'Final Review', icon: 'check_circle', desc: "Consolidate evaluation indicators and publish the AI system's finalized trust certificate." }
 ];
 
-export default function Assessment({ onAssessmentEvaluated }) {
+export default function Assessment({ applicableMetrics = ASSESSMENT_METRICS.map(({ id }) => id), onAssessmentEvaluated }) {
+  const activeSections = useMemo(
+    () => SECTIONS
+      .filter((section) => ['documentation', 'review'].includes(section.id) || applicableMetrics.includes(section.id))
+      .map((section, index) => ({ ...section, num: index + 1 })),
+    [applicableMetrics]
+  );
   const assessmentIdRef = useRef(crypto.randomUUID());
   const [activeTab, setActiveTab] = useState('documentation');
   const [formState, setFormState] = useState({
@@ -85,6 +97,12 @@ export default function Assessment({ onAssessmentEvaluated }) {
   const [downloadFormat, setDownloadFormat] = useState('pdf');
   const [documentVerifications, setDocumentVerifications] = useState({});
 
+  useEffect(() => {
+    if (!activeSections.some((section) => section.id === activeTab)) {
+      setActiveTab(activeSections[0].id);
+    }
+  }, [activeSections, activeTab]);
+
   // Handle form field changes dynamically
   const handleFieldChange = (sectionId, fieldId, value) => {
     const nextFormState = {
@@ -144,7 +162,8 @@ export default function Assessment({ onAssessmentEvaluated }) {
     let totalFields = 0;
 
     // Count documentation fields
-    totalFields += 3;
+    totalFields += 4;
+    if (formState.documentation.developerDisclaimerAcknowledged) filledFields++;
     if (formState.documentation.systemName) filledFields++;
     if (formState.documentation.intendedUse) filledFields++;
     if (formState.documentation.whitepaperName || formState.documentation.systemName) filledFields++; // upload proxy
@@ -156,7 +175,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
     if (formState.risk.optOutOptions) filledFields++;
 
     // Count other 10 sections
-    const otherSections = SECTIONS.filter(s => s.id !== 'documentation' && s.id !== 'risk');
+    const otherSections = activeSections.filter(s => s.id !== 'documentation' && s.id !== 'risk');
     otherSections.forEach(s => {
       totalFields += 2;
       if (formState[s.id]?.details) filledFields++;
@@ -169,13 +188,13 @@ export default function Assessment({ onAssessmentEvaluated }) {
     // 2. Calculate Trust Score from the FastAPI backend.
     const queryBackendScore = async () => {
       try {
-        const res = await submitAssessment(formState);
+        const res = await submitAssessment({ ...formState, applicableMetrics });
         if (res && typeof res.overall_score === 'number') {
           setAssessmentResult(res);
           setTrustScore(Math.round(res.overall_score));
           setRiskLevel(res.risk_level);
           setApiError(null);
-          onAssessmentEvaluated?.(buildDashboardAssessment(formState, res, assessmentIdRef.current));
+          onAssessmentEvaluated?.(buildDashboardAssessment({ ...formState, applicableMetrics }, res, assessmentIdRef.current));
         }
       } catch (err) {
         setApiError(err.message || 'Backend unavailable');
@@ -184,11 +203,21 @@ export default function Assessment({ onAssessmentEvaluated }) {
 
     const timer = window.setTimeout(queryBackendScore, 350);
     return () => window.clearTimeout(timer);
-  }, [formState]);
+  }, [formState, activeSections]);
 
   // Handle Assessment submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formState.documentation?.developerDisclaimerAcknowledged) {
+      setActiveTab('documentation');
+      setSubmitMessage({
+        type: 'error',
+        text: 'Please acknowledge the mandatory Developer disclaimer before submitting the assessment.'
+      });
+      window.requestAnimationFrame(() => document.getElementById('developer-disclaimer')?.focus());
+      return;
+    }
 
     if (!formState.review?.affirmed) {
       setActiveTab('review');
@@ -212,12 +241,12 @@ export default function Assessment({ onAssessmentEvaluated }) {
           ? Promise.resolve()
           : runDocumentVerification(sectionId, file, formState)
       ));
-      const res = await submitAssessment(formState);
+      const res = await submitAssessment({ ...formState, applicableMetrics });
       setAssessmentResult(res);
       setTrustScore(Math.round(res.overall_score));
       setRiskLevel(res.risk_level);
       setApiError(null);
-      onAssessmentEvaluated?.(buildDashboardAssessment(formState, res, assessmentIdRef.current));
+      onAssessmentEvaluated?.(buildDashboardAssessment({ ...formState, applicableMetrics }, res, assessmentIdRef.current));
       setSubmitMessage({
         type: 'success',
         text: `Assessment successfully submitted. Final backend trust score: ${Math.round(res.overall_score)}%.`
@@ -242,7 +271,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
     }
 
     downloadReport(
-      buildReportFromAssessment(formState, assessmentResult, {
+      buildReportFromAssessment({ ...formState, applicableMetrics }, assessmentResult, {
         id: assessmentIdRef.current,
         documentVerifications
       }),
@@ -250,7 +279,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
     );
   };
 
-  const getActiveSection = () => SECTIONS.find((s) => s.id === activeTab) || SECTIONS[0];
+  const getActiveSection = () => activeSections.find((s) => s.id === activeTab) || activeSections[0];
   const activeSection = getActiveSection();
   const scoreLabel = (value) => (typeof value === 'number' ? `${Math.round(value)}%` : 'Pending');
   const metricLabel = (value) => (typeof value === 'number' ? value.toFixed(3) : 'Pending');
@@ -350,7 +379,7 @@ export default function Assessment({ onAssessmentEvaluated }) {
             Assessment Sections
           </h2>
           <div className="flex gap-sm overflow-x-auto pb-sm lg:block lg:space-y-1 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-xs">
-            {SECTIONS.map((section) => {
+            {activeSections.map((section) => {
               const isActive = activeTab === section.id;
               const isDefaultAllowed = true;
 
@@ -693,6 +722,7 @@ function buildDashboardAssessment(formState, result, id) {
     name: formState.documentation?.systemName || 'Unnamed AI Vendor',
     category: formState.risk?.riskFrameworks?.join(', ') || 'AI Procurement Assessment',
     status: 'Completed',
+    applicableMetrics: formState.applicableMetrics,
     riskLevel: result.risk_level,
     score,
     scoreText: `${result.risk_level} Risk`,

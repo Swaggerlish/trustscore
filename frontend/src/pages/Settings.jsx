@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ASSESSMENT_METRICS } from '../utils/assessmentMetrics';
 
 const THRESHOLDS = [
   { id: 'unacceptable', label: 'Unacceptable Risk Ceiling', valueLabel: '0-25', min: 0, max: 30 },
@@ -19,7 +20,11 @@ const PERMISSION_ROWS = [
   { id: 'auditor', role: 'External Auditor', access: 'Read reports', enabled: false }
 ];
 
-export default function Settings({ savedAssessmentCount = 0 }) {
+export default function Settings({
+  savedAssessmentCount = 0,
+  applicableMetrics = ASSESSMENT_METRICS.map(({ id }) => id),
+  onApplicableMetricsChange
+}) {
   const [thresholds, setThresholds] = useState({
     unacceptable: 25,
     high: 50,
@@ -42,6 +47,17 @@ export default function Settings({ savedAssessmentCount = 0 }) {
       ...current,
       [id]: Number(value)
     }));
+  };
+
+  const toggleMetric = (metricId) => {
+    const nextMetrics = applicableMetrics.includes(metricId)
+      ? applicableMetrics.filter((id) => id !== metricId)
+      : [...applicableMetrics, metricId];
+
+    if (!nextMetrics.length) {
+      return;
+    }
+    onApplicableMetricsChange?.(nextMetrics);
   };
 
   return (
@@ -113,6 +129,49 @@ export default function Settings({ savedAssessmentCount = 0 }) {
               {savedAssessmentCount}
             </p>
           </div>
+        </section>
+
+        <section className="col-span-12 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg lg:p-xl shadow-sm">
+          <div className="flex items-start justify-between gap-md mb-lg">
+            <div>
+              <h3 className="font-headline-md text-headline-md text-on-surface">
+                Applicable Assessment Metrics
+              </h3>
+              <p className="font-body-md text-body-md text-on-surface-variant">
+                Select only the metrics relevant to each assessment. Documentation &amp; Purpose and Final Review are always included.
+              </p>
+            </div>
+            <span className="material-symbols-outlined text-primary">checklist</span>
+          </div>
+          <div className="grid grid-cols-1 gap-sm sm:grid-cols-2 lg:grid-cols-3">
+            {ASSESSMENT_METRICS.map((metric) => {
+              const isSelected = applicableMetrics.includes(metric.id);
+              return (
+                <button
+                  key={metric.id}
+                  type="button"
+                  onClick={() => toggleMetric(metric.id)}
+                  aria-pressed={isSelected}
+                  className={`flex items-center gap-sm rounded-lg border p-md text-left transition-colors ${
+                    isSelected
+                      ? 'border-primary bg-primary-container/10 text-primary'
+                      : 'border-outline-variant text-on-surface-variant hover:bg-surface-container'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">{metric.icon}</span>
+                  <span className="font-body-md font-bold">{metric.label}</span>
+                  <span className="material-symbols-outlined ml-auto text-[20px]">
+                    {isSelected ? 'check_circle' : 'radio_button_unchecked'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {!applicableMetrics.length && (
+            <p className="mt-md text-body-md font-bold text-error">
+              Select at least one metric to run an assessment.
+            </p>
+          )}
         </section>
 
         <section className="col-span-12 md:col-span-6 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg lg:p-xl shadow-sm">
